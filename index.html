@@ -328,6 +328,663 @@
     const ctx = canvas.getContext('2d');
 
     const scoreEl = document.getElementById('score');
-    const livesEls = document.querySelect
+    const livesEls = document.querySelectorAll('.heart');
+    const cloudEl = document.getElementById('cloud');
+    const pointFlash = document.getElementById('pointFlash');
+
+    // Sons
+    const jumpSound = document.getElementById('jumpSound');
+    const explosionSound = document.getElementById('explosionSound');
+    const gameOverSound = document.getElementById('gameOverSound');
+    const pointSound = document.getElementById('pointSound');
+    const lifeLostSound = document.getElementById('lifeLostSound');
+    const rewardSound = document.getElementById('rewardSound');
+    const clickSound = document.getElementById('clickSound');
+    const bgMusic = document.getElementById('bgMusic');
+
+    const soundToggleBtn = document.getElementById('soundToggle');
+    let soundOn = true;
+
+    jumpSound.volume = 0.8;
+    explosionSound.volume = 0.7;
+    gameOverSound.volume = 0.8;
+    pointSound.volume = 0.9;
+    lifeLostSound.volume = 0.9;
+    rewardSound.volume = 0.9;
+    clickSound.volume = 0.6;
+    bgMusic.volume = 0.35;
+
+    // Pré-chauffage des sons
+    const allSounds = [jumpSound, explosionSound, gameOverSound, pointSound, lifeLostSound, rewardSound, clickSound, bgMusic];
+    let warmed = false;
+
+    function warmup() {
+      if (warmed || !soundOn) return;
+      warmed = true;
+      allSounds.forEach(a => {
+        const vol = a.volume;
+        a.volume = 0;
+        a.play().then(() => {
+          setTimeout(() => {
+            a.pause();
+            a.currentTime = 0;
+            a.volume = vol;
+          }, 80);
+        }).catch(()=>{});
+      });
+    }
+
+    function playSound(a){
+      if (!soundOn) return;
+      a.currentTime = 0;
+      a.play().catch(()=>{});
+    }
+
+    soundToggleBtn.onclick = () => {
+      soundOn = !soundOn;
+      soundToggleBtn.textContent = soundOn ? "🔊" : "🔈";
+      if (!soundOn) bgMusic.pause();
+      else if (gameRunning) bgMusic.play().catch(()=>{});
+    };
+
+    // VARIABLES DE JEU
+    let score = 0, lives = 3;
+    let avions = [], bottles = [];
+    let frameCount = 0;
+    let gameRunning = false;
+    let justCrashed = false;
+    let groundTimer = null;
+
+    let blurLevel = 0;
+    let shaking = false;
+    let lastShake = Date.now();
+    let shakeStart = 0;
+    let shakeDuration = 0;
+
+    let jumpPulse = 0;
+    let lastProgressScore = 0;
+
+    const hibou = {
+      x:10, y:0,
+      width:0, height:0,
+      velocity:0,
+      gravity:0.14,
+      lift:-6
+    };
+
+    const hibouImg = new Image();
+    hibouImg.src = "https://image.noelshack.com/fichiers/2025/50/2/1765303341-file-000000004a8871f99eb95dd6d98feeda.jpg";
+
+    /* ========================
+       PROGRESSION DE LIVRAISON
+       ======================== */
+
+    const BRAND_STEPS = [
+      { score: 0,  title:"Commande en attente 💤", message:"Attrape des bouteilles." },
+      { score: 5,  title:"Commande validée ✅", message:"Le client confirme." },
+      { score: 10, title:"Préparation 🍾", message:"On remplit les sacs." },
+      { score: 20, title:"En route 🚚", message:"Livraison en cours." },
+      { score: 30, title:"Presque arrivé 🔥", message:"Reste concentré !" },
+      { score: 40, title:"Client servi 🎉", message:"Livraison réussie." },
+      { score: 50, title:"Tous les codes débloqués 🎁", message:"Niveau ultime atteint !" }
+    ];
+
+    const brandTitleEl = document.getElementById("brandStageTitle");
+    const brandMsgEl   = document.getElementById("brandStageMessage");
+    const brandFillEl  = document.getElementById("brandStageFill");
+
+    function updateBrandProgress(score) {
+      let step = BRAND_STEPS[0];
+      for (let i = 0; i < BRAND_STEPS.length; i++) {
+        if (score >= BRAND_STEPS[i].score) step = BRAND_STEPS[i];
+      }
+
+      brandTitleEl.textContent = step.title;
+      brandMsgEl.textContent = step.message;
+
+      const progress = Math.min(score, 50) / 50 * 100;
+      brandFillEl.style.width = progress + "%";
+
+      if (lastProgressScore < 25 && score >= 25) playSound(rewardSound);
+      if (lastProgressScore < 50 && score >= 50) playSound(rewardSound);
+
+      lastProgressScore = score;
+    }
+
+    /* ========================
+       BACKGROUNDS ANIMÉS
+       ======================== */
+
+    const levelBackgrounds = [
+      { threshold:0,  url:'https://i.postimg.cc/527G0Fx9/file-0000000036c0620aacb1e77bbaa186e1.png' },
+      { threshold:13, url:'https://i.postimg.cc/qqQGxLsC/file-000000006a846246a4300fc67ffcc4e0.png' },
+      { threshold:24, url:'https://i.postimg.cc/Pq9fPs0C/file-0000000092106246a2177dcebd31a1c6.png' },
+      { threshold:36, url:'https://i.postimg.cc/Y0gzJ7BY/file-000000006da0620a8731e1321d49e2a2-1.png' },
+      { threshold:48, url:'https://i.postimg.cc/MZR4k2D9/file-000000005b58620aa0ffaa23d3c57622-1.png' }
+    ];
+
+    levelBackgrounds.forEach(b => {
+      const img = new Image();
+      img.src = b.url;
+    });
+
+    let bgOffset = 0;
+    let currentBg = levelBackgrounds[0].url;
+
+    const layers = [
+      document.getElementById("bgLayer1"),
+      document.getElementById("bgLayer2")
+    ];
+
+    let activeLayer = 0;
+    layers[0].style.backgroundImage = `url('${currentBg}')`;
+    layers[0].style.opacity = 1;
+
+    function updateBackground() {
+      let nextBg = currentBg;
+      for (let i = levelBackgrounds.length - 1; i >= 0; i--) {
+        if (score >= levelBackgrounds[i].threshold) {
+          nextBg = levelBackgrounds[i].url;
+          break;
+        }
+      }
+
+      if (nextBg !== currentBg) {
+        const swap = layers[1 - activeLayer];
+        swap.style.backgroundImage = `url('${nextBg}')`;
+        swap.style.opacity = 1;
+        layers[activeLayer].style.opacity = 0;
+        activeLayer = 1 - activeLayer;
+        currentBg = nextBg;
+      }
+
+      bgOffset -= 0.3;
+      layers[activeLayer].style.backgroundPosition = `${bgOffset}px 0`;
+
+      requestAnimationFrame(updateBackground);
+    }
+
+    /* ========================
+       NUAGE ANIMÉ
+       ======================== */
+
+    let cloudX = container.clientWidth;
+    let waitingCloud = false;
+
+    function respawnCloud() {
+      waitingCloud = true;
+      setTimeout(() => {
+        cloudX = container.clientWidth;
+        cloudEl.style.top = (Math.random()*45+5)+'vh';
+        cloudEl.style.width = (32*(1+Math.random()*0.9))+'vw';
+        waitingCloud = false;
+      }, Math.random()*40000+2000);
+    }
+
+    function updateCloud() {
+      if (!waitingCloud) {
+        cloudX -= 0.5;
+        cloudEl.style.left = cloudX+'px';
+        if (cloudX < -200) respawnCloud();
+      }
+      requestAnimationFrame(updateCloud);
+    }
+
+    /* ========================
+       SPRITES
+       ======================== */
+
+    const avionsImgs = [
+      "https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-000000009d4471f4a18d957bd44dc336.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-000000000e80722fa95c5400fc4fa9c1.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-0000000047f8722fa5676a50442d4c33.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-000000001230722faf0c2566f21676ae.jpg"
+    ].map(src => { let i=new Image(); i.src=src; return i; });
+
+    const bottlesImgs = [
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324367-file-000000003bf47243b504a2b9b1dc72a8.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324476-file-000000001f1871f49e12ae4ea620a531.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324475-file-00000000eea072438e28480eb9d354ec.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324475-file-0000000037e872438fc532c60fd60d13.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324476-file-00000000c12471f49b992bd61a2ee6e1.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-000000008b187243842beb121fb85782.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-00000000819c71f49ae4d45a3e18c3c1.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-000000001b707243aa7ad1b15233dcca.jpg",
+      "https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-00000000c4c871f49e8f975ed8c906e3.jpg"
+    ].map(s => { let i=new Image(); i.src=s; return i; });
+
+    /* ========================
+       COLLISIONS
+       ======================== */
+
+    function getHitbox(x,y,w,h,sx,sy){
+      return {
+        x:x+w*sx,
+        y:y+h*sy,
+        width:w*(1-2*sx),
+        height:h*(1-2*sy)
+      };
+    }
+
+    function overlap(a,b){
+      return (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+      );
+    }
+
+    /* ========================
+       EFFETS
+       ======================== */
+
+    function applyEffects(){
+      blurLevel = score>=20 ? Math.min(1+(score-20)*0.3,8) : 0;
+      const now = Date.now();
+      if (score>=2 && !shaking && now-lastShake>=26000){
+        shaking = true;
+        shakeStart = now;
+        shakeDuration = 1000+Math.random()*2000;
+        lastShake = now;
+      }
+      if (shaking && now-shakeStart>=shakeDuration) shaking = false;
+    }
+
+    function drawBlur(img,x,y,w,h){
+      if (blurLevel>0){
+        ctx.globalAlpha = 0.4;
+        [[blurLevel,0],[-blurLevel,0],[0,blurLevel],[0,-blurLevel],
+         [blurLevel,blurLevel],[-blurLevel,blurLevel],[blurLevel,-blurLevel],[-blurLevel,-blurLevel]
+        ].forEach(o => ctx.drawImage(img,x+o[0],y+o[1],w,h));
+        ctx.globalAlpha = 1;
+      }
+      ctx.drawImage(img,x,y,w,h);
+    }
+
+    /* ========================
+       HUD
+       ======================== */
+
+    function updateHUD(){
+      scoreEl.textContent = "Score : " + score;
+      livesEls.forEach((h,i) => h.style.visibility = i < lives ? "visible" : "hidden");
+    }
+
+    /* ========================
+       SAUVEGARDE SCORES
+       ======================== */
+
+    function loadHighScores(){
+      try {
+        return JSON.parse(localStorage.getItem("highScores") || "[]");
+      } catch(e){
+        return [];
+      }
+    }
+
+    function saveScore(s){
+      const arr = loadHighScores();
+      arr.push({ score:s, ts:Date.now() });
+      localStorage.setItem("highScores", JSON.stringify(arr));
+    }
+
+    function displayHighScores(){
+      const list = document.getElementById("highScoresList");
+      const promo = document.getElementById("promoCodesList");
+      list.innerHTML = "";
+      promo.innerHTML = "";
+
+      const arr = loadHighScores();
+      if (!arr.length){
+        list.innerHTML = "<p>Aucun score.</p>";
+      } else {
+        arr.sort((a,b)=>b.score-a.score)
+           .slice(0,4)
+           .forEach(e=>{
+             let d = new Date(e.ts).toLocaleDateString("fr-FR");
+             list.innerHTML += `<p>${e.score} pts – ${d}</p>`;
+           });
+      }
+
+      const best = arr.length ? Math.max(...arr.map(e=>e.score)) : 0;
+      if (best >= 25) promo.innerHTML += "<p>Code promo : LIVOFRT</p>";
+      if (best >= 50) promo.innerHTML += "<p>Code promo : POLOFRT</p>";
+      if (!promo.innerHTML.trim()) promo.innerHTML = "<p>Pas disponible.</p>";
+    }
+
+    const reviewBtn  = document.getElementById("reviewBtn");
+    const reviewText = document.getElementById("reviewText");
+
+    /* ========================
+       CRASH & GAME OVER
+       ======================== */
+
+    function crash(){
+      if (justCrashed) return;
+      justCrashed = true;
+      lives--;
+      updateHUD();
+
+      playSound(explosionSound);
+      playSound(lifeLostSound);
+
+      document.getElementById("koEffect").style.display="block";
+      setTimeout(()=>document.getElementById("koEffect").style.display="none",500);
+
+      gameRunning=false;
+      bgMusic.pause();
+
+      const finalScoreEl = document.getElementById("finalScore");
+      const gameOverMsgEl = document.getElementById("gameOverMsg");
+
+      finalScoreEl.textContent = "Tu as attrapé " + score + " bouteilles !";
+
+      if (score < 10)
+        gameOverMsgEl.textContent = "On va dire que tu as commencé l’apéro un peu trop tôt… 🍺😅";
+      else if (score >= 25)
+        gameOverMsgEl.textContent = "Toi, on devrait t’embaucher en livreur de nuit ! 🚚🦉";
+      else
+        gameOverMsgEl.textContent = "Pas mal ! Continue comme ça 🍾";
+
+      if (score >= 25){
+        reviewBtn.style.display  = "block";
+        reviewText.style.display = "block";
+      } else {
+        reviewBtn.style.display  = "none";
+        reviewText.style.display = "none";
+      }
+
+      if (lives <= 0){
+        playSound(gameOverSound);
+        saveScore(score);
+        displayHighScores();
+        document.getElementById("gameOver").style.display="block";
+      } else {
+        document.getElementById("continueScreen").style.display="block";
+      }
+    }
+
+    /* ========================
+       BOUCLE JEU
+       ======================== */
+
+    function gameLoop(){
+      if (!gameRunning) return;
+
+      frameCount++;
+      applyEffects();
+
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      // Mouvement hibou
+      hibou.velocity += hibou.gravity;
+      hibou.y += hibou.velocity;
+
+      if (hibou.y < 0) hibou.y = 0;
+      if (hibou.y > canvas.height - hibou.height){
+        hibou.y = canvas.height - hibou.height;
+      }
+
+      if (jumpPulse > 0){
+        jumpPulse *= 0.85;
+        if (jumpPulse < 0.01) jumpPulse = 0;
+      }
+
+      let scale = 1 + jumpPulse;
+      let angle = hibou.velocity * 0.08;
+      angle = Math.max(-0.25, Math.min(angle, 0.7));
+
+      ctx.save();
+      ctx.translate(hibou.x + hibou.width/2, hibou.y + hibou.height/2);
+      ctx.rotate(angle);
+      ctx.scale(scale, scale);
+      ctx.drawImage(hibouImg, -hibou.width/2, -hibou.height/2, hibou.width, hibou.height);
+      ctx.restore();
+
+      if (hibou.y >= canvas.height - hibou.height && !groundTimer){
+        groundTimer = setTimeout(()=>{ crash(); groundTimer=null; },300);
+      } else if (hibou.y < canvas.height - hibou.height && groundTimer){
+        clearTimeout(groundTimer);
+        groundTimer = null;
+      }
+
+      const hibouHit = getHitbox(hibou.x, hibou.y, hibou.width, hibou.height, 0.25, 0.25);
+
+      // Avions
+      const baseI = Math.max(30, Math.floor(100 - score*0.3));
+
+      if (frameCount % baseI === 0){
+        avions.push({
+          img: avionsImgs[Math.floor(Math.random()*avionsImgs.length)],
+          x: canvas.width,
+          y: Math.random()*(canvas.height-50),
+          width: canvas.height*0.17,
+          height: canvas.height*0.12
+        });
+      }
+
+      if (score >= 28 && frameCount % baseI === Math.floor(baseI/2)){
+        avions.push({
+          img: avionsImgs[Math.floor(Math.random()*avionsImgs.length)],
+          x: canvas.width,
+          y: Math.random()*(canvas.height-50),
+          width: canvas.height*0.17,
+          height: canvas.height*0.12
+        });
+      }
+
+      if (score >= 45 && frameCount % baseI === Math.floor(baseI/3)){
+        avions.push({
+          img: avionsImgs[Math.floor(Math.random()*avionsImgs.length)],
+          x: canvas.width,
+          y: Math.random()*(canvas.height-50),
+          width: canvas.height*0.17,
+          height: canvas.height*0.12
+        });
+      }
+
+      for (let i=avions.length-1; i>=0; i--){
+        const a = avions[i];
+        a.x -= 2 + score*0.1;
+
+        drawBlur(a.img, a.x, a.y, a.width, a.height);
+
+        const aHit = getHitbox(a.x, a.y, a.width, a.height, 0.35, 0.35);
+        if (overlap(hibouHit, aHit)){
+          crash();
+        }
+
+        if (a.x + a.width < 0){
+          avions.splice(i,1);
+        }
+      }
+
+      // Bouteilles
+      if (frameCount % baseI === 0 && Math.random() < 0.5){
+        bottles.push({
+          img:bottlesImgs[Math.floor(Math.random()*bottlesImgs.length)],
+          x:canvas.width,
+          y:Math.random()*(canvas.height-40),
+          width:canvas.height*0.08,
+          height:canvas.height*0.08
+        });
+      }
+
+      for (let i=bottles.length-1; i>=0; i--){
+        const b = bottles[i];
+        b.x -= 2;
+
+        drawBlur(b.img,b.x,b.y,b.width,b.height);
+
+        const bHit = getHitbox(b.x,b.y,b.width,b.height,0.2,0.2);
+        if (overlap(hibouHit, bHit)){
+          score++;
+          updateHUD();
+          updateBrandProgress(score);
+
+          playSound(pointSound);
+
+          pointFlash.style.opacity = 0.2;
+          setTimeout(() => pointFlash.style.opacity = 0, 80);
+
+          bottles.splice(i,1);
+        }
+
+        if (b.x + b.width < 0){
+          bottles.splice(i,1);
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ========================
+       INIT ROUND
+       ======================== */
+
+    function initRound(){
+      justCrashed = false;
+      frameCount = 0;
+      hibou.velocity = 0;
+      hibou.y = canvas.height/2;
+      avions = [];
+      bottles = [];
+      blurLevel=0;
+      lastShake=Date.now();
+      groundTimer=null;
+
+      document.getElementById("continueScreen").style.display="none";
+
+      gameRunning = true;
+      if (soundOn) bgMusic.play().catch(()=>{});
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ========================
+       START GAME
+       ======================== */
+
+    function startGame(){
+      score = 0;
+      lives = 3;
+      lastProgressScore = 0;
+      updateHUD();
+      updateBrandProgress(score);
+
+      const ratio = window.innerHeight / 640;
+      hibou.width  = 640 * 0.16 * ratio;
+      hibou.height = 640 * 0.16 * ratio;
+
+      document.getElementById("menu").style.display="none";
+      document.getElementById("gameOver").style.display="none";
+
+      reviewBtn.style.display = "none";
+      reviewText.style.display = "none";
+
+      warmup();
+
+      gameRunning = true;
+      if (soundOn){
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(()=>{});
+      }
+
+      initRound();
+    }
+
+    /* ========================
+       INPUT
+       ======================== */
+
+    function jump(){
+      if (!gameRunning) return;
+      warmup();
+      playSound(jumpSound);
+      hibou.velocity = hibou.lift;
+      jumpPulse = 0.25;
+    }
+
+    function pointer(e){
+      if (e.target.closest(".overlay, button")) return;
+      jump();
+    }
+
+    window.addEventListener("mousedown", pointer);
+    window.addEventListener("touchstart", pointer);
+
+    document.addEventListener("keydown", e=>{
+      if (e.code === "Space"){
+        e.preventDefault();
+        jump();
+      }
+    });
+
+    /* ========================
+       BOUTONS UI
+       ======================== */
+
+    const playBtn = document.getElementById("playBtn");
+    const instructionsBtn = document.getElementById("instructionsBtn");
+    const closeInstructionsBtn = document.getElementById("closeInstructionsBtn");
+    const continueBtn = document.getElementById("continueBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const menuBtn = document.getElementById("menuBtn");
+    const useCodeBtn = document.getElementById("useCodeBtn");
+
+    function clickAnd(fn){
+      return () => {
+        warmup();
+        playSound(clickSound);
+        fn();
+      };
+    }
+
+    playBtn.onclick = clickAnd(startGame);
+
+    instructionsBtn.onclick = clickAnd(() => {
+      document.getElementById("menu").style.display="none";
+      document.getElementById("instructionsOverlay").style.display="block";
+    });
+
+    closeInstructionsBtn.onclick = clickAnd(() => {
+      document.getElementById("instructionsOverlay").style.display="none";
+      document.getElementById("menu").style.display="block";
+      displayHighScores();
+    });
+
+    continueBtn.onclick = clickAnd(initRound);
+    restartBtn.onclick = clickAnd(startGame);
+
+    menuBtn.onclick = clickAnd(() => {
+      document.getElementById("gameOver").style.display="none";
+      document.getElementById("menu").style.display="block";
+      displayHighScores();
+      gameRunning = false;
+      bgMusic.pause();
+      reviewBtn.style.display = "none";
+      reviewText.style.display = "none";
+    });
+
+    useCodeBtn.onclick = clickAnd(() => {
+      window.open("https://www.aperodenuit.com/", "_blank");
+    });
+
+    reviewBtn.onclick = click() => {
+      window.open("https://g.page/r/CeR1XkHseNX9EBM/review", "_blank");
+    };
+
+    /* ========================
+       LANCEMENT
+       ======================== */
+    displayHighScores();
+    updateBackground();
+    updateCloud();
+
+  }); // FIN DOMContentLoaded
+  </script>
+
+</body>
+</html>
 
     <button id="soundToggle">🔊</button>
