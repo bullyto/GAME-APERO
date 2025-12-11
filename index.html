@@ -3,58 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>APÉRO DE NUIT 66&reg;</title>
+  <title>APÉRO DE NUIT 66®</title>
   <meta name="theme-color" content="#000000"/>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link href="https://fonts.googleapis.com/css2?family=Baloo&display=swap" rel="stylesheet"/>
+
   <style>
     html, body {
-      margin:0; padding:0; width:100%; height:100%;
-      overflow:hidden; font-family:'Baloo', cursive; background:#000;
+      margin:0; padding:0;
+      width:100%; height:100%;
+      overflow:hidden;
+      font-family:'Baloo', cursive;
+      background:#000;
     }
 
-    /* CORRECTION MOBILE : hauteur réelle visible */
+    /* FIX MOBILE → HAUTEUR RÉELLE */
     #game-container {
       position:fixed;
       inset:0;
       width:100vw;
       height:100vh;
-      height:100dvh; /* <-- corrige le débordement sur mobile */
+      height:100dvh;
       overflow:hidden;
     }
 
-    /* Désactive les clics sur le canvas et les fonds */
-    #gameCanvas, .bg-layer { pointer-events: none; }
+    #gameCanvas, .bg-layer { pointer-events:none; }
 
     .bg-layer {
       position:absolute; top:0; left:0;
       width:100%; height:100%;
       background-repeat:repeat-x;
       background-size:auto 100%;
-      transition:opacity 1s ease; opacity:0; z-index:0;
+      transition:opacity 1s ease;
+      opacity:0;
+      z-index:0;
     }
+
     #bgLayer1, #bgLayer2 { background-position:0 0; }
 
     #gameCanvas {
       position:absolute; top:0; left:0;
-      width:100%; height:100%; background:transparent; z-index:1;
+      width:100%; height:100%;
+      z-index:1;
+      background:transparent;
     }
 
     #cloud {
-      position:absolute; opacity:0.5; z-index:5; pointer-events:none;
+      position:absolute;
+      opacity:0.5;
+      z-index:5;
+      pointer-events:none;
     }
 
     /* HUD */
-    #score, #livesDisplay { position:absolute; z-index:10; pointer-events:none; }
-    #score {
-      top:2vh; left:2vw; color:#fff; font-size:3vh;
-      background:rgba(0,0,0,0.5); padding:0.5vh 1vw; border-radius:1vh;
+    #score, #livesDisplay {
+      position:absolute;
+      z-index:10;
+      pointer-events:none;
     }
+
+    #score {
+      top:2vh; left:2vw;
+      color:#fff;
+      font-size:3vh;
+      background:rgba(0,0,0,0.5);
+      padding:0.5vh 1vw;
+      border-radius:1vh;
+    }
+
     #livesDisplay { top:2vh; right:2vw; }
+
     .heart {
       width:4vh; height:4vh;
       background-image:url('https://i.postimg.cc/QCzhYMMB/file-00000000c25061f7b431b34a26caa8d5-1.png');
-      background-size:cover; display:inline-block; margin-left:1vw;
+      background-size:cover;
+      display:inline-block;
+      margin-left:1vw;
     }
 
     /* Bouton son */
@@ -75,25 +99,46 @@
 
     /* Overlays */
     .overlay {
-      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-      background:rgba(0,0,0,0.7); padding:2.7vh 2.7vw; border-radius:2vh;
-      color:#fff; text-align:center; z-index:20; pointer-events:auto;
-      width:78vw; max-width:380px;
+      position:absolute;
+      top:50%; left:50%;
+      transform:translate(-50%, -50%);
+      background:rgba(0,0,0,0.7);
+      padding:2.7vh 2.7vw;
+      border-radius:2vh;
+      color:#fff;
+      text-align:center;
+      z-index:20;
+      width:78vw;
+      max-width:380px;
+      pointer-events:auto;
     }
+
     .overlay h1, .overlay h2 {
       margin:0 0 1.8vh;
       font-size:3.6vh;
     }
+
     .overlay p {
       font-size:2.3vh;
       margin-bottom:1.3vh;
     }
+
     .overlay button {
-      display:block; width:100%; padding:1.4vh 0; font-size:2.8vh;
-      margin:0.9vh 0; border:none; border-radius:1vh; cursor:pointer;
-      background:#add8e6; transition:transform .2s;
+      display:block;
+      width:100%;
+      padding:1.4vh 0;
+      font-size:2.8vh;
+      margin:0.9vh 0;
+      border:none;
+      border-radius:1vh;
+      cursor:pointer;
+      background:#add8e6;
+      transition:transform .2s;
     }
-    .overlay button:hover { transform:scale(1.05); }
+
+    .overlay button:hover {
+      transform:scale(1.05);
+    }
 
     #highScoresList p {
       margin:0.4vh 0;
@@ -102,8 +147,13 @@
     }
 
     #koEffect {
-      position:absolute; top:0; left:0; width:100%; height:100%;
-      background:rgba(255,0,0,0.5); display:none; z-index:30; pointer-events:none;
+      position:absolute;
+      top:0; left:0;
+      width:100%; height:100%;
+      background:rgba(255,0,0,0.5);
+      display:none;
+      z-index:30;
+      pointer-events:none;
     }
 
     #pointFlash {
@@ -117,7 +167,7 @@
       transition:opacity 0.15s linear;
     }
 
-    /* Barre de progression */
+    /* Barre progression */
     #brandProgress {
       position:absolute;
       bottom:3vh;
@@ -133,6 +183,7 @@
       font-size:2vh;
       pointer-events:none;
     }
+
     #brandStageTitle { font-size:2.2vh; margin-bottom:0.5vh; }
     #brandStageMessage { font-size:1.8vh; opacity:0.9; margin-bottom:1vh; }
 
@@ -169,36 +220,25 @@
       font-weight:bold;
       box-shadow:0 0 12px rgba(255,215,0,0.8);
     }
-    .gold-button:hover {
-      transform:scale(1.06);
-      box-shadow:0 0 18px rgba(255,215,0,1);
-    }
   </style>
 </head>
 
 <body>
-
   <div id="game-container">
-    <!-- Fonds animés -->
+
     <div id="bgLayer1" class="bg-layer"></div>
     <div id="bgLayer2" class="bg-layer"></div>
 
-    <!-- Nuage & Canvas -->
-    <img id="cloud" src="https://i.postimg.cc/zfTZ14kC/NUAGE.png" alt="Nuage animé">
+    <img id="cloud" src="https://i.postimg.cc/zfTZ14kC/NUAGE.png" alt="nuage">
     <canvas id="gameCanvas" width="480" height="640"></canvas>
 
-    <!-- HUD -->
     <div id="score">Score : 0</div>
     <div id="livesDisplay">
       <div class="heart"></div>
       <div class="heart"></div>
       <div class="heart"></div>
     </div>
-
-    <!-- Bouton son ON/OFF -->
-    <button id="soundToggle">🔊</button>
-
-    <!-- Barre de progression brandée -->
+    <!-- Barre progression -->
     <div id="brandProgress">
       <div id="brandStageTitle">Commande en attente 💤</div>
       <div id="brandStageMessage">Attrape des bouteilles pour lancer la nuit.</div>
@@ -209,49 +249,50 @@
       </div>
     </div>
 
-    <!-- Overlays -->
+    <!-- Menu principal -->
     <div id="menu" class="overlay">
-      <h1>APÉRO DE NUIT 66&reg;</h1>
+      <h1>APÉRO DE NUIT 66®</h1>
       <button id="playBtn">Jouer</button>
       <button id="instructionsBtn">Instructions</button>
       <button id="useCodeBtn">Utiliser mon code</button>
+
       <div id="highScores">
         <h2>Meilleurs scores</h2>
         <div id="highScoresList"><p>Aucun score.</p></div>
       </div>
+
       <div id="promoCodes">
-        <h2>🎁 SURPRISE</h2>
+        <h2>🎁 Surprise</h2>
         <div id="promoCodesList"><p>Pas disponible.</p></div>
       </div>
     </div>
 
+    <!-- Instructions -->
     <div id="instructionsOverlay" class="overlay" style="display:none;">
       <h2>Instructions</h2>
-      <p>🦉 Votre hibou doit attraper un maximum de bouteilles tout en évitant les avions.</p>
-      <p>❤️ Vous disposez de 3 vies. À chaque collision, vous perdez une vie.</p>
-      <p>💥 Quand vous perdez la dernière vie, la partie se termine et le score est enregistré.</p>
-      <p>🎁 Des surprises attendent les meilleurs joueurs ! Première à <strong>25 points</strong>.</p>
+      <p>🦉 Attrape des bouteilles et évite les avions.</p>
+      <p>❤️ Tu as 3 vies.</p>
+      <p>🎁 Premier cadeau à <strong>25 points</strong>.</p>
       <button id="closeInstructionsBtn">Fermer</button>
     </div>
 
+    <!-- Perte de vie -->
     <div id="continueScreen" class="overlay" style="display:none;">
       <h2>Perdu une vie !</h2>
       <button id="continueBtn">Continuer</button>
     </div>
 
+    <!-- Game Over -->
     <div id="gameOver" class="overlay" style="display:none;">
       <h2>Game Over</h2>
       <p id="finalScore"></p>
       <p id="gameOverMsg"></p>
 
-      <!-- TEXTE D'AVIS (VISIBLE À PARTIR DE 25 POINTS) -->
       <p id="reviewText" style="display:none; margin-top:1vh; font-size:2vh;">
         Tu as kiffé le jeu ? 💜  
-        Donne un petit coup de pouce à <strong>Apéro de Nuit 66&reg;</strong> en laissant un avis Google.
-        Ça prend <strong>30 secondes</strong> et ça nous aide énormément à continuer les livraisons de nuit ! 🙏
+        Laisse un avis Google pour soutenir Apéro de Nuit 66® 🙏
       </p>
 
-      <!-- BOUTON DORÉ D'AVIS (VISIBLE À PARTIR DE 25 POINTS) -->
       <button id="reviewBtn" class="gold-button" style="display:none;">
         ⭐ Laisser un avis Google
       </button>
@@ -264,582 +305,29 @@
     <div id="pointFlash"></div>
 
     <!-- Sons -->
-    <audio id="jumpSound" src="https://assets.mixkit.co/active_storage/sfx/255/255-preview.mp3" preload="auto"></audio>
-    <audio id="explosionSound" src="https://assets.mixkit.co/active_storage/sfx/235/235-preview.mp3" preload="auto"></audio>
-    <audio id="gameOverSound" src="https://assets.mixkit.co/active_storage/sfx/458/458-preview.mp3" preload="auto"></audio>
-    <audio id="pointSound" src="https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3" preload="auto"></audio>
-    <audio id="lifeLostSound" src="https://assets.mixkit.co/active_storage/sfx/1781/1781-preview.mp3" preload="auto"></audio>
-    <audio id="rewardSound" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
-    <audio id="clickSound" src="https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3" preload="auto"></audio>
-    <audio id="bgMusic" src="https://assets.mixkit.co/music/preview/mixkit-8-bit-game-770.mp3" loop preload="auto"></audio>
-  </div>
+    <audio id="jumpSound" src="https://assets.mixkit.co/active_storage/sfx/255/255-preview.mp3"></audio>
+    <audio id="explosionSound" src="https://assets.mixkit.co/active_storage/sfx/235/235-preview.mp3"></audio>
+    <audio id="gameOverSound" src="https://assets.mixkit.co/active_storage/sfx/458/458-preview.mp3"></audio>
+    <audio id="pointSound" src="https://assets.mixkit.co/active_storage/sfx/166/166-preview.mp3"></audio>
+    <audio id="lifeLostSound" src="https://assets.mixkit.co/active_storage/sfx/1781/1781-preview.mp3"></audio>
+    <audio id="rewardSound" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+    <audio id="clickSound" src="https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3"></audio>
+    <audio id="bgMusic" src="https://assets.mixkit.co/music/preview/mixkit-8-bit-game-770.mp3" loop></audio>
+
+  </div> <!-- FIN game-container -->
+
+  <!-- ====================== -->
+  <!--   JAVASCRIPT DU JEU    -->
+  <!-- ====================== -->
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
+
     const container = document.getElementById('game-container');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
     const scoreEl = document.getElementById('score');
-    const livesEls = document.querySelectorAll('.heart');
-    const cloudEl = document.getElementById('cloud');
-    const pointFlash = document.getElementById('pointFlash');
+    const livesEls = document.querySelect
 
-    // Sons
-    const jumpSound = document.getElementById('jumpSound');
-    const explosionSound = document.getElementById('explosionSound');
-    const gameOverSound = document.getElementById('gameOverSound');
-    const pointSound = document.getElementById('pointSound');
-    const bgMusic = document.getElementById('bgMusic');
-    const lifeLostSound = document.getElementById('lifeLostSound');
-    const rewardSound = document.getElementById('rewardSound');
-    const clickSound = document.getElementById('clickSound');
-
-    const soundToggleBtn = document.getElementById('soundToggle');
-    let soundOn = true;
-
-    // Volumes
-    jumpSound.volume = 0.8;
-    explosionSound.volume = 0.7;
-    gameOverSound.volume = 0.8;
-    pointSound.volume = 0.9;
-    lifeLostSound.volume = 0.9;
-    rewardSound.volume = 0.9;
-    clickSound.volume = 0.6;
-    bgMusic.volume = 0.35;
-
-    // --- Pré-chauffage des sons (pour réduire la latence) ---
-    const allSounds = [jumpSound, explosionSound, gameOverSound, pointSound,
-                       lifeLostSound, rewardSound, clickSound, bgMusic];
-    let soundsWarmedUp = false;
-
-    function warmupSounds() {
-      if (soundsWarmedUp || !soundOn) return;
-      soundsWarmedUp = true;
-      allSounds.forEach(a => {
-        if (!a) return;
-        const originalVolume = a.volume;
-        a.volume = 0;
-        a.play().then(() => {
-          setTimeout(() => {
-            a.pause();
-            a.currentTime = 0;
-            a.volume = originalVolume;
-          }, 80);
-        }).catch(() => {
-          a.volume = originalVolume;
-        });
-      });
-    }
-    // -------------------------------------------------------
-
-    function playSound(audioEl){
-      if (!soundOn || !audioEl) return;
-      audioEl.currentTime = 0;
-      audioEl.play().catch(()=>{});
-    }
-
-    soundToggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      soundOn = !soundOn;
-      soundToggleBtn.textContent = soundOn ? '🔊' : '🔈';
-      if (!soundOn) {
-        bgMusic.pause();
-      } else if (gameRunning) {
-        bgMusic.play().catch(()=>{});
-      }
-    });
-
-    // Variables de jeu
-    let score = 0, lives = 3, avions = [], bottles = [], frameCount = 0;
-    let gameRunning = false, justCrashed = false, groundTimer = null;
-    let blurLevel = 0, lastShake = Date.now(), shaking = false, shakeStart = 0, shakeDuration = 0;
-    let jumpPulse = 0;
-    let lastProgressScore = 0;
-
-    const hibou = { x:10, y:0, width:0, height:0, velocity:0, gravity:0.14, lift:-6 };
-
-    const hibouImg = new Image();
-    hibouImg.src = 'https://image.noelshack.com/fichiers/2025/50/2/1765303341-file-000000004a8871f99eb95dd6d98feeda.jpg';
-
-    // Étapes de progression
-    const BRAND_STEPS = [
-      { score: 0,  title: "Commande en attente 💤",        message: "Attrape des bouteilles pour lancer la nuit." },
-      { score: 5,  title: "Commande validée ✅",           message: "Le client a validé sa commande Apéro de Nuit 66®." },
-      { score: 10, title: "Préparation en cours 🍾",       message: "On remplit les sacs : bouteilles, glaçons, softs..." },
-      { score: 20, title: "Livreur en route 🚚",           message: "Le hibou file dans la nuit direction le client." },
-      { score: 30, title: "Livraison presque terminée 🔥", message: "Encore quelques bouteilles à sécuriser, tiens bon !" },
-      { score: 40, title: "Client servi 🎉",               message: "Livraison réussie ! Continue pour battre tous les records." },
-      { score: 50, title: "Tous les codes débloqués 🎁",   message: "Tu as atteint le niveau ultime de l'apéro de nuit !" }
-    ];
-
-    const brandTitleEl = document.getElementById('brandStageTitle');
-    const brandMsgEl   = document.getElementById('brandStageMessage');
-    const brandFillEl  = document.getElementById('brandStageFill');
-
-    function updateBrandProgress(currentScore) {
-      let currentStep = BRAND_STEPS[0];
-      for (let i = 0; i < BRAND_STEPS.length; i++) {
-        if (currentScore >= BRAND_STEPS[i].score) currentStep = BRAND_STEPS[i];
-      }
-      brandTitleEl.textContent = currentStep.title;
-      brandMsgEl.textContent = currentStep.message;
-
-      const capped = Math.min(currentScore, 50);
-      const ratio = capped / 50;
-      brandFillEl.style.width = (ratio * 100) + '%';
-
-      if (lastProgressScore < 25 && currentScore >= 25) playSound(rewardSound);
-      if (lastProgressScore < 50 && currentScore >= 50) playSound(rewardSound);
-      lastProgressScore = currentScore;
-    }
-
-    // Fonds animés
-    const levelBackgrounds = [
-      { threshold: 0,  url: 'https://i.postimg.cc/527G0Fx9/file-0000000036c0620aacb1e77bbaa186e1.png' },
-      { threshold: 13, url: 'https://i.postimg.cc/qqQGxLsC/file-000000006a846246a4300fc67ffcc4e0.png' },
-      { threshold: 24, url: 'https://i.postimg.cc/Pq9fPs0C/file-0000000092106246a2177dcebd31a1c6.png' },
-      { threshold: 36, url: 'https://i.postimg.cc/Y0gzJ7BY/file-000000006da0620a8731e1321d49e2a2-1.png' },
-      { threshold: 48, url: 'https://i.postimg.cc/MZR4k2D9/file-000000005b58620aa0ffaa23d3c57622-1.png' }
-    ];
-    levelBackgrounds.forEach(bg=>{ const img=new Image(); img.src=bg.url; });
-
-    let bgOffset = 0, currentBg = levelBackgrounds[0].url;
-    const layers = [document.getElementById('bgLayer1'), document.getElementById('bgLayer2')];
-    let activeLayer = 0;
-    layers[0].style.backgroundImage = `url('${currentBg}')`;
-    layers[0].style.opacity = 1;
-
-    function updateBackground(){
-      let newBg = currentBg;
-      for(let i = levelBackgrounds.length-1; i>=0; i--){
-        if(score >= levelBackgrounds[i].threshold){
-          newBg = levelBackgrounds[i].url;
-          break;
-        }
-      }
-      if(newBg !== currentBg){
-        const next = layers[1-activeLayer];
-        next.style.backgroundImage = `url('${newBg}')`;
-        next.style.backgroundPosition = `${bgOffset}px 0`;
-        next.style.opacity = 1;
-        layers[activeLayer].style.opacity = 0;
-        activeLayer = 1-activeLayer;
-        currentBg = newBg;
-      }
-      bgOffset -= 0.3;
-      layers[activeLayer].style.backgroundPosition = `${bgOffset}px 0`;
-      requestAnimationFrame(updateBackground);
-    }
-
-    // Nuage animé
-    let cloudX = container.clientWidth, cloudW = 0, waiting = false;
-    function pickH(){ return (Math.random()*45+5)+'vh'; }
-    function pickW(){ return (32*(1+Math.random()*0.9))+'vw'; }
-    function respawnCloud(){
-      waiting = true;
-      setTimeout(()=>{
-        cloudX = container.clientWidth;
-        cloudEl.style.top = pickH();
-        cloudEl.style.width = pickW();
-        cloudW = cloudEl.getBoundingClientRect().width;
-        waiting = false;
-      }, Math.random()*40000+2000);
-    }
-    function updateCloud(){
-      if(!waiting){
-        if(!cloudEl.style.top){
-          cloudEl.style.top = pickH();
-          cloudEl.style.width = pickW();
-          cloudW = cloudEl.getBoundingClientRect().width;
-        }
-        cloudX -= 0.5;
-        cloudEl.style.left = cloudX+'px';
-        if(cloudX < -cloudW) respawnCloud();
-      }
-      requestAnimationFrame(updateCloud);
-    }
-
-    // Sprites
-    const avionsImgs = [
-      'https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-000000009d4471f4a18d957bd44dc336.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-000000000e80722fa95c5400fc4fa9c1.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-0000000047f8722fa5676a50442d4c33.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/2/1765303468-file-000000001230722faf0c2566f21676ae.jpg'
-    ].map(src=>{ const i=new Image(); i.src=src; return i; });
-
-    const bottlesImgs = [
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324367-file-000000003bf47243b504a2b9b1dc72a8.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324476-file-000000001f1871f49e12ae4ea620a531.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324475-file-00000000eea072438e28480eb9d354ec.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324475-file-0000000037e872438fc532c60fd60d13.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324476-file-00000000c12471f49b992bd61a2ee6e1.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-000000008b187243842beb121fb85782.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-00000000819c71f49ae4d45a3e18c3c1.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-000000001b707243aa7ad1b15233dcca.jpg',
-      'https://image.noelshack.com/fichiers/2025/50/3/1765324519-file-00000000c4c871f49e8f975ed8c906e3.jpg'
-    ].map(src=>{ const i=new Image(); i.src=src; return i; });
-
-    // Hitbox util
-    function getHitbox(x, y, w, h, shrinkX, shrinkY) {
-      const sx = w * shrinkX;
-      const sy = h * shrinkY;
-      return { x: x + sx, y: y + sy, width: w - 2*sx, height: h - 2*sy };
-    }
-    function rectsOverlap(r1, r2) {
-      return (
-        r1.x < r2.x + r2.width  &&
-        r1.x + r1.width  > r2.x &&
-        r1.y < r2.y + r2.height &&
-        r1.y + r1.height > r2.y
-      );
-    }
-
-    function applyEffects(){
-      blurLevel = score>=20 ? Math.min(1+(score-20)*0.3,8) : 0;
-      const now = Date.now();
-      if(score>=2 && !shaking && now-lastShake>=26000){
-        shaking = true; shakeStart = now; shakeDuration = 1000+Math.random()*2000; lastShake = now;
-      }
-      if(shaking && now-shakeStart>=shakeDuration) shaking = false;
-    }
-    function drawWithFakeBlur(img,x,y,w,h){
-      if(blurLevel>0){
-        ctx.globalAlpha = 0.4;
-        [[blurLevel,0],[-blurLevel,0],[0,blurLevel],[0,-blurLevel],
-         [blurLevel,blurLevel],[-blurLevel,blurLevel],[blurLevel,-blurLevel],[-blurLevel,-blurLevel]]
-        .forEach(off=> ctx.drawImage(img,x+off[0],y+off[1],w,h));
-        ctx.globalAlpha = 1;
-      }
-      ctx.drawImage(img,x,y,w,h);
-    }
-    function updateHUD(){
-      scoreEl.textContent = `Score : ${score}`;
-      livesEls.forEach((h,i)=> h.style.visibility = i<lives?'visible':'hidden');
-    }
-
-    // High scores & codes
-    function loadHighScores(){
-      const raw = localStorage.getItem('highScores');
-      if (!raw) return [];
-      try { return JSON.parse(raw); } catch(e){ return []; }
-    }
-    function displayHighScores(){
-      const list = document.getElementById('highScoresList');
-      const promo = document.getElementById('promoCodesList');
-      list.innerHTML = '';
-      promo.innerHTML = '';
-
-      const arr = loadHighScores();
-      if(!arr.length) list.innerHTML='<p>Aucun score.</p>';
-      else arr.sort((a,b)=>b.score-a.score).slice(0,4).forEach(e=>{
-        const d=new Date(e.timestamp);
-        list.innerHTML+=`<p>${e.score} pts – ${d.toLocaleDateString('fr-FR')}</p>`;
-      });
-
-      const best = arr.length ? Math.max(...arr.map(e=>e.score)) : 0;
-      const codes = [];
-      if(best>=25) codes.push('LIVOFRT');
-      if(best>=50) codes.push('POLOFRT');
-      if(codes.length) codes.forEach(c=> promo.innerHTML+=`<p>Code promo : ${c}</p>`);
-      else promo.innerHTML='<p>Pas disponible.</p>';
-    }
-    function saveScore(sc){
-      const arr=loadHighScores();
-      arr.push({score:sc,timestamp:Date.now()});
-      localStorage.setItem('highScores',JSON.stringify(arr));
-    }
-
-    // RÉFÉRENCES BOUTON / TEXTE AVIS
-    const reviewBtn  = document.getElementById('reviewBtn');
-    const reviewText = document.getElementById('reviewText');
-
-    // Crash & game over
-    function crash(){
-      if(justCrashed) return;
-      justCrashed=true;
-      lives--;
-      updateHUD();
-
-      playSound(explosionSound);
-      playSound(lifeLostSound);
-
-      document.getElementById('koEffect').style.display='block';
-      setTimeout(()=>document.getElementById('koEffect').style.display='none',500);
-      gameRunning=false;
-      bgMusic.pause();
-
-      const finalScoreEl = document.getElementById('finalScore');
-      const gameOverMsgEl = document.getElementById('gameOverMsg');
-      finalScoreEl.textContent = `Tu as attrapé ${score} bouteilles !`;
-
-      if (score < 10) {
-        gameOverMsgEl.textContent = "On va dire que tu as commencé l’apéro un peu trop tôt… 🍺😅";
-      } else if (score >= 25) {
-        gameOverMsgEl.textContent = "Toi, on devrait t’embaucher en livreur de nuit ! 🚚🦉";
-      } else {
-        gameOverMsgEl.textContent = "Pas mal ! Encore quelques vols et tu deviendras une légende de l’apéro. 🍾";
-      }
-
-      // Affichage du bouton d'avis à partir de 25 points
-      if (score >= 25) {
-        reviewBtn.style.display  = 'block';
-        reviewText.style.display = 'block';
-      } else {
-        reviewBtn.style.display  = 'none';
-        reviewText.style.display = 'none';
-      }
-
-      if(lives<=0){
-        if (soundOn) {
-          gameOverSound.currentTime = 0;
-          gameOverSound.play().catch(()=>{});
-          setTimeout(()=>{
-            gameOverSound.pause();
-            gameOverSound.currentTime = 0;
-          }, 3500);
-        }
-        saveScore(score); displayHighScores();
-        document.getElementById('gameOver').style.display='block';
-      } else {
-        document.getElementById('continueScreen').style.display='block';
-      }
-    }
-
-    function gameLoop(){
-      if(!gameRunning) return;
-      frameCount++;
-      applyEffects();
-
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-
-      // Hibou
-      hibou.velocity += hibou.gravity;
-      hibou.y += hibou.velocity;
-      if (hibou.y < 0) hibou.y = 0;
-      if (hibou.y > canvas.height - hibou.height) hibou.y = canvas.height - hibou.height;
-
-      if (jumpPulse > 0) {
-        jumpPulse *= 0.85;
-        if (jumpPulse < 0.01) jumpPulse = 0;
-      }
-      const scale = 1 + jumpPulse;
-      let angle = hibou.velocity * 0.08;
-      if (angle < -0.25) angle = -0.25;
-      if (angle > 0.7)  angle = 0.7;
-
-      ctx.save();
-      ctx.translate(hibou.x + hibou.width / 2, hibou.y + hibou.height / 2);
-      ctx.rotate(angle);
-      ctx.scale(scale, scale);
-      ctx.drawImage(hibouImg, -hibou.width / 2, -hibou.height / 2, hibou.width, hibou.height);
-      ctx.restore();
-
-      if(hibou.y >= canvas.height - hibou.height && !groundTimer){
-        groundTimer = setTimeout(()=>{ crash(); groundTimer=null; },300);
-      } else if(hibou.y < canvas.height - hibou.height && groundTimer){
-        clearTimeout(groundTimer);
-        groundTimer = null;
-      }
-
-      const hibouHit = getHitbox(hibou.x, hibou.y, hibou.width, hibou.height, 0.25, 0.25);
-
-      const baseI = Math.max(30, Math.floor(100 - score*0.3));
-
-      if(frameCount % baseI === 0){
-        avions.push({
-          img: avionsImgs[Math.floor(Math.random()*avionsImgs.length)],
-          x: canvas.width, y: Math.random()*(canvas.height-50),
-          width: canvas.height*0.17, height: canvas.height*0.12
-        });
-      }
-      if(score >= 28 && frameCount % baseI === Math.floor(baseI/2)){
-        avions.push({
-          img: avionsImgs[Math.floor(Math.random()*avionsImgs.length)],
-          x: canvas.width, y: Math.random()*(canvas.height-50),
-          width: canvas.height*0.17, height: canvas.height*0.12
-        });
-      }
-      if(score >= 45 && frameCount % baseI === Math.floor(baseI/3)){
-        avions.push({
-          img: avionsImgs[Math.floor(Math.random()*avionsImgs.length)],
-          x: canvas.width, y: Math.random()*(canvas.height-50),
-          width: canvas.height*0.17, height: canvas.height*0.12
-        });
-      }
-
-      if(frameCount % baseI === 0 && Math.random()<0.5){
-        bottles.push({
-          img: bottlesImgs[Math.floor(Math.random()*bottlesImgs.length)],
-          x: canvas.width, y: Math.random()*(canvas.height-40),
-          width: canvas.height*0.08, height: canvas.height*0.08
-        });
-      }
-
-      // Avions
-      for(let i=avions.length-1;i>=0;i--){
-        const a=avions[i];
-        a.x -= 2 + score*0.1;
-        drawWithFakeBlur(a.img,a.x,a.y,a.width,a.height);
-        const aHit = getHitbox(a.x, a.y, a.width, a.height, 0.35, 0.35);
-        if(rectsOverlap(hibouHit, aHit)){
-          crash();
-        }
-        if(a.x + a.width < 0) avions.splice(i,1);
-      }
-
-      // Bouteilles
-      for(let i=bottles.length-1;i>=0;i--){
-        const b=bottles[i];
-        b.x -= 2;
-        drawWithFakeBlur(b.img,b.x,b.y,b.width,b.height);
-        const bHit = getHitbox(b.x, b.y, b.width, b.height, 0.2, 0.2);
-        if(rectsOverlap(hibouHit, bHit)){
-          score++;
-          updateHUD();
-          updateBrandProgress(score);
-          playSound(pointSound);
-
-          pointFlash.style.opacity = '0.2';
-          setTimeout(() => { pointFlash.style.opacity = '0'; }, 80);
-
-          bottles.splice(i,1);
-        }
-      }
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    // Init & contrôles
-    function initRound(){
-      justCrashed=false; frameCount=0;
-      hibou.velocity=0; hibou.y = canvas.height/2;
-      avions=[]; bottles=[];
-      blurLevel=0; lastShake=Date.now(); groundTimer=null;
-      document.getElementById('continueScreen').style.display='none';
-      gameRunning=true;
-      if (soundOn) bgMusic.play().catch(()=>{});
-      requestAnimationFrame(gameLoop);
-    }
-
-    function startGame(){
-      score=0;
-      lives=3;
-      lastProgressScore = 0;
-      updateHUD();
-      updateBrandProgress(score);
-
-      const ratio = window.innerHeight / 640;
-      hibou.width  = 640 * 0.16 * ratio;
-      hibou.height = 640 * 0.16 * ratio;
-
-      displayHighScores();
-      document.getElementById('menu').style.display='none';
-      document.getElementById('gameOver').style.display='none';
-
-      // Réinitialiser le texte et le bouton d'avis
-      reviewBtn.style.display  = 'none';
-      reviewText.style.display = 'none';
-
-      gameRunning = true;
-      if (soundOn) {
-        bgMusic.currentTime = 0;
-        bgMusic.play().catch(()=>{});
-      }
-      initRound();
-    }
-
-    function jump(){
-      if(!gameRunning) return;
-      warmupSounds();          // pré-chauffe au premier saut
-      playSound(jumpSound);
-      hibou.velocity = hibou.lift;
-      jumpPulse = 0.25;
-    }
-
-    function inputIsOnUI(e){
-      return e.target.closest('.overlay, button') !== null;
-    }
-    function handlePointer(e){
-      if(inputIsOnUI(e)) return;
-      jump();
-    }
-
-    // Boutons + son de clic
-    const playBtn = document.getElementById('playBtn');
-    const instructionsBtn = document.getElementById('instructionsBtn');
-    const useCodeBtn = document.getElementById('useCodeBtn');
-    const closeInstructionsBtn = document.getElementById('closeInstructionsBtn');
-    const continueBtn = document.getElementById('continueBtn');
-    const restartBtn = document.getElementById('restartBtn');
-    const menuBtn = document.getElementById('menuBtn');
-
-    function clickAnd(fn){
-      return () => {
-        warmupSounds();        // pré-chauffe au premier clic
-        playSound(clickSound);
-        fn();
-      };
-    }
-
-    playBtn.onclick = clickAnd(startGame);
-    instructionsBtn.onclick = clickAnd(()=>{
-      document.getElementById('menu').style.display='none';
-      document.getElementById('instructionsOverlay').style.display='block';
-    });
-    closeInstructionsBtn.onclick = clickAnd(()=>{
-      document.getElementById('instructionsOverlay').style.display='none';
-      document.getElementById('menu').style.display='block';
-      displayHighScores();
-    });
-    continueBtn.onclick = clickAnd(initRound);
-    restartBtn.onclick = clickAnd(startGame);
-    menuBtn.onclick = clickAnd(()=>{
-      document.getElementById('gameOver').style.display='none';
-      document.getElementById('menu').style.display='block';
-      displayHighScores();
-      gameRunning = false;
-      bgMusic.pause();
-
-      // On masque au retour menu (sécurité)
-      reviewBtn.style.display  = 'none';
-      reviewText.style.display = 'none';
-    });
-    useCodeBtn.onclick = clickAnd(()=>{
-      window.open('https://www.aperodenuit.com/', '_blank');
-    });
-
-    // CLIC SUR LE BOUTON D'AVIS GOOGLE
-    reviewBtn.onclick = clickAnd(()=>{
-      window.open('https://g.page/r/CeR1XkHseNX9EBM/review', '_blank');
-    });
-
-    document.addEventListener('keydown',e=>{
-      if(e.code==='Space'){
-        e.preventDefault();
-        jump();
-      }
-    });
-    window.addEventListener('mousedown', handlePointer);
-    window.addEventListener('touchstart', handlePointer);
-
-    // Au chargement
-    displayHighScores();
-    updateBackground();
-    updateCloud();
-  });
-  </script>
-
-  <!-- Enregistrement du service worker pour la PWA -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .catch(err => {
-            console.log('Service worker registration failed:', err);
-          });
-      });
-    }
-  </script>
-</body>
-</html>
+    <button id="soundToggle">🔊</button>
