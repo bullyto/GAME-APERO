@@ -12,7 +12,16 @@
       margin:0; padding:0; width:100%; height:100%;
       overflow:hidden; font-family:'Baloo', cursive; background:#000;
     }
-    #game-container { position:relative; width:100vw; height:100vh; overflow:hidden; }
+
+    /* CORRECTION MOBILE : hauteur réelle visible */
+    #game-container {
+      position:fixed;
+      inset:0;
+      width:100vw;
+      height:100vh;
+      height:100dvh; /* <-- corrige le débordement sur mobile */
+      overflow:hidden;
+    }
 
     /* Désactive les clics sur le canvas et les fonds */
     #gameCanvas, .bg-layer { pointer-events: none; }
@@ -48,7 +57,7 @@
       background-size:cover; display:inline-block; margin-left:1vw;
     }
 
-    /* Bouton son ON/OFF */
+    /* Bouton son */
     #soundToggle {
       position:absolute;
       top:8vh;
@@ -86,7 +95,6 @@
     }
     .overlay button:hover { transform:scale(1.05); }
 
-    /* Liste des meilleurs scores : moins d’espace entre les lignes */
     #highScoresList p {
       margin:0.4vh 0;
       line-height:1.1;
@@ -98,7 +106,6 @@
       background:rgba(255,0,0,0.5); display:none; z-index:30; pointer-events:none;
     }
 
-    /* Flash léger quand on gagne un point */
     #pointFlash {
       position:absolute;
       top:0; left:0;
@@ -126,15 +133,9 @@
       font-size:2vh;
       pointer-events:none;
     }
-    #brandStageTitle {
-      font-size:2.2vh;
-      margin-bottom:0.5vh;
-    }
-    #brandStageMessage {
-      font-size:1.8vh;
-      opacity:0.9;
-      margin-bottom:1vh;
-    }
+    #brandStageTitle { font-size:2.2vh; margin-bottom:0.5vh; }
+    #brandStageMessage { font-size:1.8vh; opacity:0.9; margin-bottom:1vh; }
+
     #brandStageBar {
       width:100%;
       height:1.2vh;
@@ -143,12 +144,14 @@
       overflow:visible;
       position:relative;
     }
+
     #brandStageFill {
       width:0%;
       height:100%;
       background:linear-gradient(90deg, #fdd835, #ff9800);
       transition:width 0.2s ease-out;
     }
+
     .gift-marker {
       position:absolute;
       transform:translateX(-50%);
@@ -156,20 +159,10 @@
       text-shadow:0 0 6px rgba(0,0,0,0.9);
       z-index:5;
     }
-    /* 25 pts un peu plus bas */
-    #gift25 {
-      left:50%;
-      top:-2vh;
-      font-size:3.2vh;
-    }
-    /* 50 pts plus gros */
-    #gift50 {
-      left:100%;
-      top:-3.5vh;
-      font-size:4.2vh;
-    }
 
-    /* BOUTON D'AVIS DORÉ */
+    #gift25 { left:50%; top:-2vh; font-size:3.2vh; }
+    #gift50 { left:100%; top:-3.5vh; font-size:4.2vh; }
+
     .gold-button {
       background:linear-gradient(135deg, #ffd700, #ffb300);
       color:#000;
@@ -182,7 +175,9 @@
     }
   </style>
 </head>
+
 <body>
+
   <div id="game-container">
     <!-- Fonds animés -->
     <div id="bgLayer1" class="bg-layer"></div>
