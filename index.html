@@ -3,16 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <!-- IMAGE DE PARTAGE FACEBOOK -->
-  <meta property="og:title" content="Apéro de Nuit 66 – Gagne ta commande !" />
-  <meta property="og:description" content="Attrape des bouteilles, évite les avions… et débloque ta récompense !" />
-  <meta property="og:image" content="https://image.noelshack.com/fichiers/2025/50/4/1765461965-file-00000000e0d471f4b2832e39d35e5a7f-1.jpg" />
-  <meta property="og:url" content="https://bullyto.github.io/GAME-APERO/" />
-  <meta property="og:type" content="website" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-
   <title>APÉRO DE NUIT 66&reg;</title>
   <meta name="theme-color" content="#000000"/>
   <link rel="manifest" href="manifest.webmanifest"/>
@@ -22,16 +12,7 @@
       margin:0; padding:0; width:100%; height:100%;
       overflow:hidden; font-family:'Baloo', cursive; background:#000;
     }
-
-    /* CORRECTION MOBILE : hauteur réelle visible */
-    #game-container {
-      position:fixed;
-      inset:0;
-      width:100vw;
-      height:100vh;
-      height:100dvh; /* <-- corrige le débordement sur mobile */
-      overflow:hidden;
-    }
+    #game-container { position:relative; width:100vw; height:100vh; overflow:hidden; }
 
     /* Désactive les clics sur le canvas et les fonds */
     #gameCanvas, .bg-layer { pointer-events: none; }
@@ -67,7 +48,7 @@
       background-size:cover; display:inline-block; margin-left:1vw;
     }
 
-    /* Bouton son */
+    /* Bouton son ON/OFF */
     #soundToggle {
       position:absolute;
       top:8vh;
@@ -105,6 +86,7 @@
     }
     .overlay button:hover { transform:scale(1.05); }
 
+    /* Liste des meilleurs scores : moins d’espace entre les lignes */
     #highScoresList p {
       margin:0.4vh 0;
       line-height:1.1;
@@ -116,6 +98,7 @@
       background:rgba(255,0,0,0.5); display:none; z-index:30; pointer-events:none;
     }
 
+    /* Flash léger quand on gagne un point */
     #pointFlash {
       position:absolute;
       top:0; left:0;
@@ -143,9 +126,15 @@
       font-size:2vh;
       pointer-events:none;
     }
-    #brandStageTitle { font-size:2.2vh; margin-bottom:0.5vh; }
-    #brandStageMessage { font-size:1.8vh; opacity:0.9; margin-bottom:1vh; }
-
+    #brandStageTitle {
+      font-size:2.2vh;
+      margin-bottom:0.5vh;
+    }
+    #brandStageMessage {
+      font-size:1.8vh;
+      opacity:0.9;
+      margin-bottom:1vh;
+    }
     #brandStageBar {
       width:100%;
       height:1.2vh;
@@ -154,14 +143,12 @@
       overflow:visible;
       position:relative;
     }
-
     #brandStageFill {
       width:0%;
       height:100%;
       background:linear-gradient(90deg, #fdd835, #ff9800);
       transition:width 0.2s ease-out;
     }
-
     .gift-marker {
       position:absolute;
       transform:translateX(-50%);
@@ -169,10 +156,20 @@
       text-shadow:0 0 6px rgba(0,0,0,0.9);
       z-index:5;
     }
+    /* 25 pts un peu plus bas */
+    #gift25 {
+      left:50%;
+      top:-2vh;
+      font-size:3.2vh;
+    }
+    /* 50 pts plus gros */
+    #gift50 {
+      left:100%;
+      top:-3.5vh;
+      font-size:4.2vh;
+    }
 
-    #gift25 { left:50%; top:-2vh; font-size:3.2vh; }
-    #gift50 { left:100%; top:-3.5vh; font-size:4.2vh; }
-
+    /* BOUTON D'AVIS DORÉ */
     .gold-button {
       background:linear-gradient(135deg, #ffd700, #ffb300);
       color:#000;
@@ -183,11 +180,19 @@
       transform:scale(1.06);
       box-shadow:0 0 18px rgba(255,215,0,1);
     }
+
+    /* Texte qui clignote doucement pour "clique sur l'écran" */
+    .tap-blink {
+      animation: slowBlink 1.8s ease-in-out infinite;
+    }
+    @keyframes slowBlink {
+      0%, 60% { opacity: 1; }
+      80% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
   </style>
 </head>
-
 <body>
-
   <div id="game-container">
     <!-- Fonds animés -->
     <div id="bgLayer1" class="bg-layer"></div>
@@ -244,6 +249,12 @@
       <button id="closeInstructionsBtn">Fermer</button>
     </div>
 
+    <!-- NOUVEAU POPUP "CLIQUE SUR L'ÉCRAN POUR DÉMARRER" -->
+    <div id="tapToStart" class="overlay" style="display:none;">
+      <h2>Prêt à décoller ? 🦉</h2>
+      <p class="tap-blink">Clique brièvement sur l'écran pour faire sauter le hibou.</p>
+    </div>
+
     <div id="continueScreen" class="overlay" style="display:none;">
       <h2>Perdu une vie !</h2>
       <button id="continueBtn">Continuer</button>
@@ -256,14 +267,12 @@
 
       <!-- TEXTE D'AVIS (VISIBLE À PARTIR DE 25 POINTS) -->
       <p id="reviewText" style="display:none; margin-top:1vh; font-size:2vh;">
-        Tu as kiffé le jeu ? 💜  
-        Donne un petit coup de pouce à <strong>Apéro de Nuit 66&reg;</strong> en laissant un avis Google.
-        Ça prend <strong>30 secondes</strong> et ça nous aide énormément à continuer les livraisons de nuit ! 🙏
+        Soutenez-nous avec un avis! 🙏
       </p>
 
       <!-- BOUTON DORÉ D'AVIS (VISIBLE À PARTIR DE 25 POINTS) -->
       <button id="reviewBtn" class="gold-button" style="display:none;">
-        ⭐ Laisser un avis Google
+        ⭐ Soutenez-nous avec un avis
       </button>
 
       <button id="restartBtn">Rejouer</button>
@@ -294,6 +303,7 @@
     const livesEls = document.querySelectorAll('.heart');
     const cloudEl = document.getElementById('cloud');
     const pointFlash = document.getElementById('pointFlash');
+    const tapToStartOverlay = document.getElementById('tapToStart');
 
     // Sons
     const jumpSound = document.getElementById('jumpSound');
@@ -366,6 +376,7 @@
     let blurLevel = 0, lastShake = Date.now(), shaking = false, shakeStart = 0, shakeDuration = 0;
     let jumpPulse = 0;
     let lastProgressScore = 0;
+    let waitingForFirstTap = false; // <<< état "hibou en suspension"
 
     const hibou = { x:10, y:0, width:0, height:0, velocity:0, gravity:0.14, lift:-6 };
 
@@ -621,6 +632,24 @@
       frameCount++;
       applyEffects();
 
+      // Tant qu'on attend le premier clic : hibou figé en l'air + popup
+      if (waitingForFirstTap) {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        const scale = 1;
+        const angle = 0;
+
+        ctx.save();
+        ctx.translate(hibou.x + hibou.width / 2, hibou.y + hibou.height / 2);
+        ctx.rotate(angle);
+        ctx.scale(scale, scale);
+        ctx.drawImage(hibouImg, -hibou.width / 2, -hibou.height / 2, hibou.width, hibou.height);
+        ctx.restore();
+
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+
       ctx.clearRect(0,0,canvas.width,canvas.height);
 
       // Hibou
@@ -727,6 +756,11 @@
       avions=[]; bottles=[];
       blurLevel=0; lastShake=Date.now(); groundTimer=null;
       document.getElementById('continueScreen').style.display='none';
+
+      // On met le hibou en pause + popup
+      waitingForFirstTap = true;
+      tapToStartOverlay.style.display = 'block';
+
       gameRunning=true;
       if (soundOn) bgMusic.play().catch(()=>{});
       requestAnimationFrame(gameLoop);
@@ -751,20 +785,28 @@
       reviewBtn.style.display  = 'none';
       reviewText.style.display = 'none';
 
-      gameRunning = true;
       if (soundOn) {
         bgMusic.currentTime = 0;
-        bgMusic.play().catch(()=>{});
       }
       initRound();
     }
 
+    // Premier clic / appui barre espace : démarre la partie ET fait sauter le hibou
     function jump(){
       if(!gameRunning) return;
-      warmupSounds();          // pré-chauffe au premier saut
       playSound(jumpSound);
       hibou.velocity = hibou.lift;
       jumpPulse = 0.25;
+    }
+
+    function startFromTap(){
+      if (!gameRunning) return;
+      warmupSounds();
+      if (waitingForFirstTap) {
+        waitingForFirstTap = false;
+        tapToStartOverlay.style.display = 'none';
+      }
+      jump();
     }
 
     function inputIsOnUI(e){
@@ -772,7 +814,7 @@
     }
     function handlePointer(e){
       if(inputIsOnUI(e)) return;
-      jump();
+      startFromTap();
     }
 
     // Boutons + son de clic
@@ -811,6 +853,10 @@
       gameRunning = false;
       bgMusic.pause();
 
+      // On masque aussi le popup de départ au cas où
+      waitingForFirstTap = false;
+      tapToStartOverlay.style.display = 'none';
+
       // On masque au retour menu (sécurité)
       reviewBtn.style.display  = 'none';
       reviewText.style.display = 'none';
@@ -827,7 +873,7 @@
     document.addEventListener('keydown',e=>{
       if(e.code==='Space'){
         e.preventDefault();
-        jump();
+        startFromTap();
       }
     });
     window.addEventListener('mousedown', handlePointer);
