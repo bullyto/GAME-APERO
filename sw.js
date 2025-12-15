@@ -1,43 +1,31 @@
-const CACHE_NAME = 'hibou-aperodenuit-v1';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './sw.js',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+const CACHE_NAME = "hibou66-v1";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
-// Install : on met les fichiers en cache
-self.addEventListener('install', event => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
-// Activate : nettoyage des anciens caches si tu changes la version
-self.addEventListener('activate', event => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    )
+    caches.keys().then((keys) => Promise.all(keys.map((k) => k !== CACHE_NAME ? caches.delete(k) : null)))
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch : on sert d'abord le cache, puis le réseau
-self.addEventListener('fetch', event => {
+self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).catch(() => cachedResponse);
-    })
+    caches.match(event.request).then((cached) => cached || fetch(event.request).then((resp) => {
+      const copy = resp.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(()=>{});
+      return resp;
+    }).catch(() => cached))
   );
 });

@@ -2,17 +2,28 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>APÉRO DE NUIT 66&reg;</title>
   <meta name="theme-color" content="#000000"/>
   <link rel="manifest" href="manifest.webmanifest"/>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo&display=swap" rel="stylesheet"/>
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
+<link href="https://fonts.googleapis.com/css2?family=Baloo&display=swap" rel="stylesheet"/>
   <style>
     html, body {
       margin:0; padding:0; width:100%; height:100%;
       overflow:hidden; font-family:'Baloo', cursive; background:#000;
+      /* évite les bugs de 100vh sur Chrome mobile */
+      overscroll-behavior: none;
     }
-    #game-container { position:relative; width:100vw; height:100vh; overflow:hidden; }
+    #game-container {
+      position:relative;
+      width:100vw;
+      height:100vh;
+      height:100dvh; /* Chrome/Android : hauteur dynamique */
+      overflow:hidden;
+    }
 
     /* Désactive les clics sur le canvas et les fonds */
     #gameCanvas, .bg-layer { pointer-events: none; }
@@ -110,63 +121,67 @@
       transition:opacity 0.15s linear;
     }
 
-    /* Barre de progression */
+    /* Barre de progression (robuste sur Chrome/PWA) */
     #brandProgress {
       position:absolute;
-      bottom:3vh;
       left:50%;
       transform:translateX(-50%);
-      width:80vw;
-      max-width:500px;
-      background:rgba(0,0,0,0.6);
-      padding:1.5vh 2vw;
-      border-radius:2vh;
+      /* évite que Chrome “mange” le bas (barre d'adresse / safe area) */
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      width: min(76vw, 460px);
+      background: rgba(0,0,0,0.6);
+      padding: 10px 14px; /* un peu plus petit */
+      border-radius: 16px;
       color:#fff;
       z-index:10;
-      font-size:2vh;
+      font-size: 14px;
       pointer-events:none;
+      box-sizing: border-box;
     }
     #brandStageTitle {
-      font-size:2.2vh;
-      margin-bottom:0.5vh;
+      font-size: 15px;
+      margin-bottom: 4px;
     }
     #brandStageMessage {
-      font-size:1.8vh;
-      opacity:0.9;
-      margin-bottom:1vh;
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      line-height: 1.2;
     }
     #brandStageBar {
       width:100%;
-      height:1.2vh;
-      background:rgba(255,255,255,0.15);
-      border-radius:1vh;
-      overflow:visible;
-      position:relative;
+      height: 8px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      overflow: visible;
+      position: relative;
     }
     #brandStageFill {
       width:0%;
       height:100%;
-      background:linear-gradient(90deg, #fdd835, #ff9800);
-      transition:width 0.2s ease-out;
+      background: linear-gradient(90deg, #fdd835, #ff9800);
+      transition: width 0.2s ease-out;
+      border-radius: 999px;
     }
     .gift-marker {
       position:absolute;
-      transform:translateX(-50%);
+      transform: translateX(-50%);
       pointer-events:none;
-      text-shadow:0 0 6px rgba(0,0,0,0.9);
+      text-shadow: 0 0 6px rgba(0,0,0,0.9);
       z-index:5;
+      line-height: 1;
     }
-    /* 25 pts un peu plus bas */
+    /* 25 pts */
     #gift25 {
       left:50%;
-      top:-2vh;
-      font-size:3.2vh;
+      top:-16px;
+      font-size: 22px;
     }
-    /* 50 pts plus gros */
+    /* 50 pts */
     #gift50 {
       left:100%;
-      top:-3.5vh;
-      font-size:4.2vh;
+      top:-20px;
+      font-size: 28px;
     }
 
     /* BOUTON D'AVIS DORÉ */
@@ -229,7 +244,7 @@
       <h1>APÉRO DE NUIT 66&reg;</h1>
       <button id="playBtn">Jouer</button>
       <button id="instructionsBtn">Instructions</button>
-      <button id="useCodeBtn">Utiliser mon code</button>
+      <button id="useCodeBtn" style="display:none;">Utiliser mon code</button>
       <div id="highScores">
         <h2>Meilleurs scores</h2>
         <div id="highScoresList"><p>Aucun score.</p></div>
@@ -378,7 +393,7 @@
     let lastProgressScore = 0;
     let waitingForFirstTap = false; // <<< état "hibou en suspension"
 
-    const hibou = { x:10, y:0, width:0, height:0, velocity:0, gravity:0.12, lift:-5.7 };
+    const hibou = { x:10, y:0, width:0, height:0, velocity:0, gravity:0.14, lift:-6 };
 
     const hibouImg = new Image();
     hibouImg.src = 'https://image.noelshack.com/fichiers/2025/50/2/1765303341-file-000000004a8871f99eb95dd6d98feeda.jpg';
@@ -540,6 +555,21 @@
     }
 
     // High scores & codes
+
+    function hasUnlockedCode25(){
+      // Débloqué si un score >= 25 a été atteint (persistant)
+      return localStorage.getItem('unlockedCode25') === '1';
+    }
+    function setUnlockedCode25(){
+      localStorage.setItem('unlockedCode25', '1');
+      if (useCodeBtn) useCodeBtn.style.display = 'block';
+    }
+    function syncUseCodeButton(bestScore){
+      // Montre uniquement après 25 points atteints
+      if (!useCodeBtn) return;
+      if (bestScore >= 25 || hasUnlockedCode25()) useCodeBtn.style.display = 'block';
+      else useCodeBtn.style.display = 'none';
+    }
     function loadHighScores(){
       const raw = localStorage.getItem('highScores');
       if (!raw) return [];
@@ -559,6 +589,7 @@
       });
 
       const best = arr.length ? Math.max(...arr.map(e=>e.score)) : 0;
+      syncUseCodeButton(best);
       const codes = [];
       if(best>=25) codes.push('LIVOFRT');
       if(best>=50) codes.push('POLOFRT');
@@ -737,6 +768,8 @@
           score++;
           updateHUD();
           updateBrandProgress(score);
+
+          if (score === 25) { setUnlockedCode25(); }
           playSound(pointSound);
 
           pointFlash.style.opacity = '0.2';
@@ -881,6 +914,7 @@
 
     // Au chargement
     displayHighScores();
+    syncUseCodeButton(hasUnlockedCode25() ? 25 : 0);
     updateBackground();
     updateCloud();
   });
