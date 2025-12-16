@@ -393,6 +393,71 @@
     let lastProgressScore = 0;
     let waitingForFirstTap = false; // <<< état "hibou en suspension"
 
+    // --- Anti-cheat (trop de clics) : 10 actions en 2 secondes => punition vitesse avions + overlay ---
+    const CHEAT_IMG_URL = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
+    const antiCheat = {
+      clicks: [],            // timestamps (ms) des actions
+      flagged: false,
+      flaggedAt: 0,
+      overlayShown: false,
+      planeSpeedMul: 1
+    };
+
+    function registerActionForAntiCheat(){
+      const now = performance.now();
+      antiCheat.clicks.push(now);
+      while (antiCheat.clicks.length && (now - antiCheat.clicks[0]) > 2000) antiCheat.clicks.shift();
+
+      // 10 actions en 2 secondes => suspicion confirmée
+      if (!antiCheat.flagged && antiCheat.clicks.length >= 10) {
+        antiCheat.flagged = true;
+        antiCheat.flaggedAt = now;
+      }
+    }
+
+    function showCheatOverlay(){
+      // évite doublons
+      if (antiCheat.overlayShown) return;
+      antiCheat.overlayShown = true;
+
+      const div = document.createElement("div");
+      div.style.position = "fixed";
+      div.style.inset = "0";
+      div.style.background = "rgba(0,0,0,0.88)";
+      div.style.display = "flex";
+      div.style.flexDirection = "column";
+      div.style.alignItems = "center";
+      div.style.justifyContent = "center";
+      div.style.zIndex = "999999";
+      div.style.padding = "16px";
+      div.innerHTML = `
+        <div style="color:#fff;text-align:center;font-size:20px;margin-bottom:12px;line-height:1.25;">
+          Trop de clics détectés 😈<br/>Du coup… vitesse des avions : <b>MAX</b> 🛩️💨
+        </div>
+        <img src="${CHEAT_IMG_URL}" alt="anti-cheat" style="max-width:82vw;max-height:55vh;border-radius:18px;box-shadow:0 0 22px rgba(255,255,255,0.12);" />
+      `;
+      // Clique n'importe où pour fermer (sans casser le jeu)
+      div.addEventListener("click", () => div.remove());
+      document.body.appendChild(div);
+    }
+
+    function applyCheatPenalty(){
+      if (!antiCheat.flagged) {
+        antiCheat.planeSpeedMul = 1;
+        return;
+      }
+      const now = performance.now();
+      // Ramp progressif sur 6s : x1 -> x2.4
+      const t = Math.min(1, (now - antiCheat.flaggedAt) / 6000);
+      antiCheat.planeSpeedMul = 1 + t * 1.4;
+
+      // Affiche l'image après ~4.5s
+      if (!antiCheat.overlayShown && (now - antiCheat.flaggedAt) > 4500) {
+        showCheatOverlay();
+      }
+    }
+
+
     const hibou = { x:10, y:0, width:0, height:0, velocity:0, gravity:0.12, lift:-5.3 };
 
     const hibouImg = new Image();
@@ -662,6 +727,7 @@
       if(!gameRunning) return;
       frameCount++;
       applyEffects();
+      applyCheatPenalty();
 
       // Tant qu'on attend le premier clic : hibou figé en l'air + popup
       if (waitingForFirstTap) {
@@ -749,7 +815,7 @@
       // Avions
       for(let i=avions.length-1;i>=0;i--){
         const a=avions[i];
-        a.x -= 2 + score*0.1;
+        a.x -= (2 + score*0.1) * antiCheat.planeSpeedMul;
         drawWithFakeBlur(a.img,a.x,a.y,a.width,a.height);
         const aHit = getHitbox(a.x, a.y, a.width, a.height, 0.35, 0.35);
         if(rectsOverlap(hibouHit, aHit)){
@@ -802,6 +868,12 @@
     function startGame(){
       score=0;
       lives=3;
+      // reset anti-cheat pour une nouvelle partie
+      antiCheat.clicks = [];
+      antiCheat.flagged = false;
+      antiCheat.flaggedAt = 0;
+      antiCheat.overlayShown = false;
+      antiCheat.planeSpeedMul = 1;
       lastProgressScore = 0;
       updateHUD();
       updateBrandProgress(score);
@@ -834,6 +906,7 @@
 
     function startFromTap(){
       if (!gameRunning) return;
+      registerActionForAntiCheat();
       warmupSounds();
       if (waitingForFirstTap) {
         waitingForFirstTap = false;
