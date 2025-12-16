@@ -395,7 +395,7 @@
     // - 10s après détection => GAME OVER forcé (via timer, fiable même sur GitHub/PWA)
     // - image affichée APRÈS "Perdu", verrouillée 5s
     // =====================
-    const CHEAT_IMAGE_URL = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
+    const CHEAT_IMAGE_URL = "https://i.postimg.cc/Nymz5YhW/cheat-image.jpg";
     let clickHistory = [];
     let cheatDetected = false;
     let cheatTime = 0;
@@ -443,11 +443,24 @@
       overlay.style.padding = '12px';
 
       overlay.innerHTML = `
-        <img src="${CHEAT_IMAGE_URL}"
-          style="max-width:95vw;max-height:86vh;border-radius:22px;box-shadow:0 0 60px red;object-fit:contain;"
-        />
+        <div style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+          <img id="cheatImg" src="${CHEAT_IMAGE_URL}" referrerpolicy="no-referrer"
+            style="max-width:95vw;max-height:86vh;border-radius:22px;box-shadow:0 0 60px red;object-fit:contain;"
+            alt="cheat"
+          />
+          <div id="cheatImgErr" style="display:none;margin-top:14px;color:#fff;font-size:18px;opacity:.9;text-align:center">
+            (Image bloquée par l’hébergeur) — ouvre le lien dans un nouvel onglet ou change d’hébergement.
+          </div>
+        </div>
       `;
       document.body.appendChild(overlay);
+
+      // Debug + fallback si l’hébergeur bloque l’affichage (hotlink/referrer)
+      const img = overlay.querySelector('#cheatImg');
+      const err = overlay.querySelector('#cheatImgErr');
+      if (img) {
+        img.onerror = () => { if (err) err.style.display = 'block'; };
+      }
 
       // Impossible de fermer avant 5 secondes
       setTimeout(() => {
