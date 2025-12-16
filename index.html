@@ -387,36 +387,34 @@
 
     // Variables de jeu
     let score = 0, lives = 3, avions = [], bottles = [], frameCount = 0;
+    let gameRunning = false, justCrashed = false, groundTimer = null;
+
     // =====================
     // Anti-triche (trop de clics) — FIX GitHub/PWA
     // Règles :
     // - 10 actions en 2s => triche détectée
     // - vitesse avions augmente fort
-    // - 10s après détection => GAME OVER forcé (via timer, fiable même sur GitHub/PWA)
+    // - 10s après détection => GAME OVER forcé (timer fiable)
     // - image affichée APRÈS "Perdu", verrouillée 5s
     // =====================
-    const CHEAT_IMAGE_URL = "https://i.postimg.cc/Nymz5YhW/cheat-image.jpg";
+    const CHEAT_IMAGE_URL = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
     let clickHistory = [];
     let cheatDetected = false;
     let cheatTime = 0;
     let cheatImageShown = false;
     let planeSpeedMultiplier = 1;
-
-    // timers/flags (important pour GitHub + service worker/cache)
     let cheatForceTimeout = null;
     let cheatForced = false;
 
     function registerUserAction(){
       const now = Date.now();
       clickHistory.push(now);
-      // ne garder que 2 secondes d'historique
       clickHistory = clickHistory.filter(t => now - t <= 2000);
 
       if(!cheatDetected && clickHistory.length >= 10){
         cheatDetected = true;
         cheatTime = now;
 
-        // Timer FIXE (plus fiable que "elapsed >= 10000" dans la boucle)
         if (cheatForceTimeout) clearTimeout(cheatForceTimeout);
         cheatForceTimeout = setTimeout(() => {
           if (gameRunning && !cheatForced) {
@@ -425,6 +423,13 @@
           }
         }, 10000);
       }
+    }
+
+    function applyCheatLogic(){
+      if(!cheatDetected) return;
+      const elapsed = Date.now() - cheatTime;
+      // Augmente fort (jusqu’à ~x4.2)
+      planeSpeedMultiplier = Math.min(1 + elapsed / 1200, 4.2);
     }
 
     function showCheatOverlayLocked(){
@@ -443,24 +448,19 @@
       overlay.style.padding = '12px';
 
       overlay.innerHTML = `
-        <div style="position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-          <img id="cheatImg" src="${CHEAT_IMAGE_URL}" referrerpolicy="no-referrer"
-            style="max-width:95vw;max-height:86vh;border-radius:22px;box-shadow:0 0 60px red;object-fit:contain;"
-            alt="cheat"
-          />
-          <div id="cheatImgErr" style="display:none;margin-top:14px;color:#fff;font-size:18px;opacity:.9;text-align:center">
-            (Image bloquée par l’hébergeur) — ouvre le lien dans un nouvel onglet ou change d’hébergement.
-          </div>
+        <img id="cheatImg" src="${CHEAT_IMAGE_URL}" referrerpolicy="no-referrer"
+          style="max-width:95vw;max-height:86vh;border-radius:22px;box-shadow:0 0 60px red;object-fit:contain;"
+          alt="cheat"
+        />
+        <div id="cheatImgErr" style="display:none;margin-top:14px;color:#fff;font-size:18px;opacity:.9;text-align:center">
+          (Image bloquée par l’hébergeur) — change d’hébergement si besoin.
         </div>
       `;
       document.body.appendChild(overlay);
 
-      // Debug + fallback si l’hébergeur bloque l’affichage (hotlink/referrer)
       const img = overlay.querySelector('#cheatImg');
       const err = overlay.querySelector('#cheatImgErr');
-      if (img) {
-        img.onerror = () => { if (err) err.style.display = 'block'; };
-      }
+      if (img) img.onerror = () => { if (err) err.style.display = 'block'; };
 
       // Impossible de fermer avant 5 secondes
       setTimeout(() => {
@@ -469,30 +469,19 @@
     }
 
     function forceGameOverFromCheat(){
-      // Crash() enlève 1 vie, donc on met 1 pour forcer 0 => Game Over
       if(!gameRunning) return;
 
-      // On force la dernière vie + crash
+      // On force la dernière vie + crash => écran PERDU affiché ensuite
       lives = 1;
       justCrashed = false;
       crash();
 
-      // Afficher l'image AU-DESSUS de l'écran 'Perdu' (après affichage)
+      // Image AU-DESSUS de "Perdu"
       setTimeout(() => {
         showCheatOverlayLocked();
       }, 120);
     }
 
-    function applyCheatLogic(){
-      if(!cheatDetected) return;
-
-      const elapsed = Date.now() - cheatTime;
-
-      // Augmente ENCORE PLUS la vitesse des avions (jusqu'à x4.2)
-      planeSpeedMultiplier = Math.min(1 + elapsed / 1200, 4.2);
-    }
-
-    let gameRunning = false, justCrashed = false, groundTimer = null;
     let blurLevel = 0, lastShake = Date.now(), shaking = false, shakeStart = 0, shakeDuration = 0;
     let jumpPulse = 0;
     let lastProgressScore = 0;
@@ -758,7 +747,6 @@
         }
         saveScore(score); displayHighScores();
         document.getElementById('gameOver').style.display='block';
-        if (cheatDetected) { setTimeout(() => { showCheatOverlayLocked(); }, 80); }
       } else {
         document.getElementById('continueScreen').style.display='block';
       }
@@ -908,7 +896,7 @@
 
     function startGame(){
       score=0;
-      lives=3;
+
       // Reset anti-triche
       clickHistory = [];
       cheatDetected = false;
@@ -918,6 +906,7 @@
       cheatForced = false;
       if (cheatForceTimeout) { clearTimeout(cheatForceTimeout); cheatForceTimeout = null; }
 
+      lives=3;
       lastProgressScore = 0;
       updateHUD();
       updateBrandProgress(score);
@@ -955,7 +944,6 @@
         waitingForFirstTap = false;
         tapToStartOverlay.style.display = 'none';
       }
-      registerUserAction();
       jump();
     }
 
@@ -964,6 +952,7 @@
     }
     function handlePointer(e){
       if(inputIsOnUI(e)) return;
+      registerUserAction();
       startFromTap();
     }
 
@@ -1003,11 +992,6 @@
       gameRunning = false;
       bgMusic.pause();
 
-      // stop anti-triche timer si on quitte la partie
-      if (cheatForceTimeout) { clearTimeout(cheatForceTimeout); cheatForceTimeout = null; }
-      cheatForced = false;
-
-
       // On masque aussi le popup de départ au cas où
       waitingForFirstTap = false;
       tapToStartOverlay.style.display = 'none';
@@ -1028,6 +1012,7 @@
     document.addEventListener('keydown',e=>{
       if(e.code==='Space'){
         e.preventDefault();
+        registerUserAction();
         startFromTap();
       }
     });
