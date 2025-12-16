@@ -387,76 +387,82 @@
 
     // Variables de jeu
     let score = 0, lives = 3, avions = [], bottles = [], frameCount = 0;
+    // =====================
+    // Anti-triche (trop de clics)
+    // Règles : 10 actions en 2s => triche ; +10s => GAME OVER forcé ; image après 'Perdu' verrouillée 5s
+    // =====================
+    const CHEAT_IMAGE_URL = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
+    let clickHistory = [];
+    let cheatDetected = false;
+    let cheatTime = 0;
+    let cheatImageShown = false;
+    let planeSpeedMultiplier = 1;
+
+    function registerUserAction(){
+      const now = Date.now();
+      clickHistory.push(now);
+      // ne garder que 2 secondes d'historique
+      clickHistory = clickHistory.filter(t => now - t <= 2000);
+      if(!cheatDetected && clickHistory.length >= 10){
+        cheatDetected = true;
+        cheatTime = now;
+      }
+    }
+
+    function showCheatOverlayLocked(){
+      if(cheatImageShown) return;
+      cheatImageShown = true;
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.background = 'rgba(0,0,0,0.90)';
+      overlay.style.zIndex = '9999999';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      overlay.style.flexDirection = 'column';
+      overlay.innerHTML = `
+        <img src="${CHEAT_IMAGE_URL}"
+          style="max-width:92vw;max-height:85vh;border-radius:22px;box-shadow:0 0 60px red;"
+        />
+      `;
+      document.body.appendChild(overlay);
+      // Impossible de fermer avant 5 secondes
+      setTimeout(() => {
+        overlay.addEventListener('click', () => overlay.remove());
+      }, 5000);
+    }
+
+    function forceGameOverFromCheat(){
+      // crash() enlève 1 vie, donc on met 1 pour forcer 0 => Game Over
+      if(!gameRunning) return;
+      lives = 1;
+      // assure qu'on peut crasher
+      justCrashed = false;
+      crash();
+      // afficher l'image AU-DESSUS de l'écran 'Perdu' (après affichage)
+      setTimeout(() => {
+        showCheatOverlayLocked();
+      }, 80);
+    }
+
+    function applyCheatLogic(){
+      if(!cheatDetected) return;
+      const now = Date.now();
+      const elapsed = now - cheatTime;
+      // Augmente fortement la vitesse des avions (jusqu'à x4 environ)
+      planeSpeedMultiplier = Math.min(1 + elapsed / 1500, 4.0);
+      // GAME OVER forcé au bout de 10s après détection
+      if(elapsed >= 10000 && gameRunning){
+        forceGameOverFromCheat();
+      }
+    }
+
     let gameRunning = false, justCrashed = false, groundTimer = null;
     let blurLevel = 0, lastShake = Date.now(), shaking = false, shakeStart = 0, shakeDuration = 0;
     let jumpPulse = 0;
     let lastProgressScore = 0;
     let waitingForFirstTap = false; // <<< état "hibou en suspension"
-
-    // --- Anti-cheat (trop de clics) : 10 actions en 2 secondes => punition vitesse avions + overlay ---
-    const CHEAT_IMG_URL = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
-    const antiCheat = {
-      clicks: [],            // timestamps (ms) des actions
-      flagged: false,
-      flaggedAt: 0,
-      overlayShown: false,
-      planeSpeedMul: 1
-    };
-
-    function registerActionForAntiCheat(){
-      const now = performance.now();
-      antiCheat.clicks.push(now);
-      while (antiCheat.clicks.length && (now - antiCheat.clicks[0]) > 2000) antiCheat.clicks.shift();
-
-      // 10 actions en 2 secondes => suspicion confirmée
-      if (!antiCheat.flagged && antiCheat.clicks.length >= 10) {
-        antiCheat.flagged = true;
-        antiCheat.flaggedAt = now;
-      }
-    }
-
-    function showCheatOverlay(){
-      // évite doublons
-      if (antiCheat.overlayShown) return;
-      antiCheat.overlayShown = true;
-
-      const div = document.createElement("div");
-      div.style.position = "fixed";
-      div.style.inset = "0";
-      div.style.background = "rgba(0,0,0,0.88)";
-      div.style.display = "flex";
-      div.style.flexDirection = "column";
-      div.style.alignItems = "center";
-      div.style.justifyContent = "center";
-      div.style.zIndex = "999999";
-      div.style.padding = "16px";
-      div.innerHTML = `
-        <div style="color:#fff;text-align:center;font-size:20px;margin-bottom:12px;line-height:1.25;">
-          Trop de clics détectés 😈<br/>Du coup… vitesse des avions : <b>MAX</b> 🛩️💨
-        </div>
-        <img src="${CHEAT_IMG_URL}" alt="anti-cheat" style="max-width:82vw;max-height:55vh;border-radius:18px;box-shadow:0 0 22px rgba(255,255,255,0.12);" />
-      `;
-      // Clique n'importe où pour fermer (sans casser le jeu)
-      div.addEventListener("click", () => div.remove());
-      document.body.appendChild(div);
-    }
-
-    function applyCheatPenalty(){
-      if (!antiCheat.flagged) {
-        antiCheat.planeSpeedMul = 1;
-        return;
-      }
-      const now = performance.now();
-      // Ramp progressif sur 6s : x1 -> x2.4
-      const t = Math.min(1, (now - antiCheat.flaggedAt) / 6000);
-      antiCheat.planeSpeedMul = 1 + t * 1.4;
-
-      // Affiche l'image après ~4.5s
-      if (!antiCheat.overlayShown && (now - antiCheat.flaggedAt) > 4500) {
-        showCheatOverlay();
-      }
-    }
-
 
     const hibou = { x:10, y:0, width:0, height:0, velocity:0, gravity:0.12, lift:-5.3 };
 
@@ -718,6 +724,7 @@
         }
         saveScore(score); displayHighScores();
         document.getElementById('gameOver').style.display='block';
+        if (cheatDetected) { setTimeout(() => { showCheatOverlayLocked(); }, 80); }
       } else {
         document.getElementById('continueScreen').style.display='block';
       }
@@ -727,7 +734,7 @@
       if(!gameRunning) return;
       frameCount++;
       applyEffects();
-      applyCheatPenalty();
+      applyCheatLogic();
 
       // Tant qu'on attend le premier clic : hibou figé en l'air + popup
       if (waitingForFirstTap) {
@@ -815,7 +822,7 @@
       // Avions
       for(let i=avions.length-1;i>=0;i--){
         const a=avions[i];
-        a.x -= (2 + score*0.1) * antiCheat.planeSpeedMul;
+        a.x -= (2 + score*0.1) * planeSpeedMultiplier;
         drawWithFakeBlur(a.img,a.x,a.y,a.width,a.height);
         const aHit = getHitbox(a.x, a.y, a.width, a.height, 0.35, 0.35);
         if(rectsOverlap(hibouHit, aHit)){
@@ -868,12 +875,13 @@
     function startGame(){
       score=0;
       lives=3;
-      // reset anti-cheat pour une nouvelle partie
-      antiCheat.clicks = [];
-      antiCheat.flagged = false;
-      antiCheat.flaggedAt = 0;
-      antiCheat.overlayShown = false;
-      antiCheat.planeSpeedMul = 1;
+      // Reset anti-triche
+      clickHistory = [];
+      cheatDetected = false;
+      cheatTime = 0;
+      cheatImageShown = false;
+      planeSpeedMultiplier = 1;
+
       lastProgressScore = 0;
       updateHUD();
       updateBrandProgress(score);
@@ -906,12 +914,12 @@
 
     function startFromTap(){
       if (!gameRunning) return;
-      registerActionForAntiCheat();
       warmupSounds();
       if (waitingForFirstTap) {
         waitingForFirstTap = false;
         tapToStartOverlay.style.display = 'none';
       }
+      registerUserAction();
       jump();
     }
 
