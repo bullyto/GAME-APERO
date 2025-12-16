@@ -388,8 +388,12 @@
     // Variables de jeu
     let score = 0, lives = 3, avions = [], bottles = [], frameCount = 0;
     // =====================
-    // Anti-triche (trop de clics)
-    // Règles : 10 actions en 2s => triche ; +10s => GAME OVER forcé ; image après 'Perdu' verrouillée 5s
+    // Anti-triche (trop de clics) — FIX GitHub/PWA
+    // Règles :
+    // - 10 actions en 2s => triche détectée
+    // - vitesse avions augmente fort
+    // - 10s après détection => GAME OVER forcé (via timer, fiable même sur GitHub/PWA)
+    // - image affichée APRÈS "Perdu", verrouillée 5s
     // =====================
     const CHEAT_IMAGE_URL = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
     let clickHistory = [];
@@ -398,20 +402,35 @@
     let cheatImageShown = false;
     let planeSpeedMultiplier = 1;
 
+    // timers/flags (important pour GitHub + service worker/cache)
+    let cheatForceTimeout = null;
+    let cheatForced = false;
+
     function registerUserAction(){
       const now = Date.now();
       clickHistory.push(now);
       // ne garder que 2 secondes d'historique
       clickHistory = clickHistory.filter(t => now - t <= 2000);
+
       if(!cheatDetected && clickHistory.length >= 10){
         cheatDetected = true;
         cheatTime = now;
+
+        // Timer FIXE (plus fiable que "elapsed >= 10000" dans la boucle)
+        if (cheatForceTimeout) clearTimeout(cheatForceTimeout);
+        cheatForceTimeout = setTimeout(() => {
+          if (gameRunning && !cheatForced) {
+            cheatForced = true;
+            forceGameOverFromCheat();
+          }
+        }, 10000);
       }
     }
 
     function showCheatOverlayLocked(){
       if(cheatImageShown) return;
       cheatImageShown = true;
+
       const overlay = document.createElement('div');
       overlay.style.position = 'fixed';
       overlay.style.inset = '0';
@@ -421,12 +440,15 @@
       overlay.style.alignItems = 'center';
       overlay.style.justifyContent = 'center';
       overlay.style.flexDirection = 'column';
+      overlay.style.padding = '12px';
+
       overlay.innerHTML = `
         <img src="${CHEAT_IMAGE_URL}"
-          style="max-width:92vw;max-height:85vh;border-radius:22px;box-shadow:0 0 60px red;"
+          style="max-width:95vw;max-height:86vh;border-radius:22px;box-shadow:0 0 60px red;object-fit:contain;"
         />
       `;
       document.body.appendChild(overlay);
+
       // Impossible de fermer avant 5 secondes
       setTimeout(() => {
         overlay.addEventListener('click', () => overlay.remove());
@@ -434,28 +456,27 @@
     }
 
     function forceGameOverFromCheat(){
-      // crash() enlève 1 vie, donc on met 1 pour forcer 0 => Game Over
+      // Crash() enlève 1 vie, donc on met 1 pour forcer 0 => Game Over
       if(!gameRunning) return;
+
+      // On force la dernière vie + crash
       lives = 1;
-      // assure qu'on peut crasher
       justCrashed = false;
       crash();
-      // afficher l'image AU-DESSUS de l'écran 'Perdu' (après affichage)
+
+      // Afficher l'image AU-DESSUS de l'écran 'Perdu' (après affichage)
       setTimeout(() => {
         showCheatOverlayLocked();
-      }, 80);
+      }, 120);
     }
 
     function applyCheatLogic(){
       if(!cheatDetected) return;
-      const now = Date.now();
-      const elapsed = now - cheatTime;
-      // Augmente fortement la vitesse des avions (jusqu'à x4 environ)
-      planeSpeedMultiplier = Math.min(1 + elapsed / 1500, 4.0);
-      // GAME OVER forcé au bout de 10s après détection
-      if(elapsed >= 10000 && gameRunning){
-        forceGameOverFromCheat();
-      }
+
+      const elapsed = Date.now() - cheatTime;
+
+      // Augmente ENCORE PLUS la vitesse des avions (jusqu'à x4.2)
+      planeSpeedMultiplier = Math.min(1 + elapsed / 1200, 4.2);
     }
 
     let gameRunning = false, justCrashed = false, groundTimer = null;
@@ -881,6 +902,8 @@
       cheatTime = 0;
       cheatImageShown = false;
       planeSpeedMultiplier = 1;
+      cheatForced = false;
+      if (cheatForceTimeout) { clearTimeout(cheatForceTimeout); cheatForceTimeout = null; }
 
       lastProgressScore = 0;
       updateHUD();
@@ -966,6 +989,11 @@
       displayHighScores();
       gameRunning = false;
       bgMusic.pause();
+
+      // stop anti-triche timer si on quitte la partie
+      if (cheatForceTimeout) { clearTimeout(cheatForceTimeout); cheatForceTimeout = null; }
+      cheatForced = false;
+
 
       // On masque aussi le popup de départ au cas où
       waitingForFirstTap = false;
