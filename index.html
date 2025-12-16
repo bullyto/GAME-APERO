@@ -391,7 +391,17 @@
     // Anti-triche (trop de clics)
     // Règles : 10 actions en 2s => triche ; +10s => GAME OVER forcé ; image après 'Perdu' verrouillée 5s
     // =====================
-    const CHEAT_IMAGE_URL = "./cheat.jpeg";
+    const CHEAT_IMAGE_URL = "tricherie.jpeg.gif";
+    
+    // Anti-cheat uniquement sur PC (souris/clavier). Sur mobile/tablette: désactivé.
+    const IS_PC = (() => {
+      const ua = navigator.userAgent || "";
+      const isMobileUA = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+      const hasTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+      const finePointer = window.matchMedia && window.matchMedia("(pointer:fine)").matches;
+      return !isMobileUA && (!hasTouch || finePointer);
+    })();
+const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
     let clickHistory = [];
     let cheatDetected = false;
     let cheatTime = 0;
@@ -447,6 +457,7 @@
     }
 
     function applyCheatLogic(){
+      if (!IS_PC) return;
       if(!cheatDetected) return;
       const now = Date.now();
       const elapsed = now - cheatTime;
@@ -919,7 +930,7 @@
         waitingForFirstTap = false;
         tapToStartOverlay.style.display = 'none';
       }
-      registerUserAction();
+      if (IS_PC) registerUserAction();
       jump();
     }
 
