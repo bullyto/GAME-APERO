@@ -397,7 +397,8 @@
     // - 10s après détection => GAME OVER forcé (timer fiable)
     // - image affichée APRÈS "Perdu", verrouillée 5s
     // =====================
-    const CHEAT_IMAGE_URL = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
+    const CHEAT_IMAGE_URL = "cheat.jpeg";
+    const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/1765906495-images-9.jpeg";
     let clickHistory = [];
     let cheatDetected = false;
     let cheatTime = 0;
@@ -453,14 +454,26 @@
           alt="cheat"
         />
         <div id="cheatImgErr" style="display:none;margin-top:14px;color:#fff;font-size:18px;opacity:.9;text-align:center">
-          (Image bloquée par l’hébergeur) — change d’hébergement si besoin.
+          (Image introuvable / bloquée) — mets l'image en local dans ton repo (cheat.jpeg) ou elle s’ouvrira en nouvel onglet.
         </div>
       `;
       document.body.appendChild(overlay);
 
       const img = overlay.querySelector('#cheatImg');
       const err = overlay.querySelector('#cheatImgErr');
-      if (img) img.onerror = () => { if (err) err.style.display = 'block'; };
+      if (img) {
+        img.onerror = () => {
+          // 1) tenter le fallback (si l'image locale n'est pas présente)
+          if (img.getAttribute('data-tried-fallback') !== '1') {
+            img.setAttribute('data-tried-fallback','1');
+            img.src = CHEAT_IMAGE_FALLBACK;
+            return;
+          }
+          // 2) sinon afficher un message + ouvrir l'image dans un nouvel onglet
+          if (err) err.style.display = 'block';
+          try { window.open(CHEAT_IMAGE_FALLBACK, '_blank', 'noopener'); } catch(e){}
+        };
+      }
 
       // Impossible de fermer avant 5 secondes
       setTimeout(() => {
