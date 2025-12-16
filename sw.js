@@ -1,46 +1,45 @@
-// sw.js — Hibou66 (fix cache GitHub/PWA + cheat.jpeg)
-// - Bump CACHE_NAME when you deploy
-// - Precache cheat.jpeg
-// - Network-first for navigation (index.html) to avoid stale HTML
-// - Cache-first for static assets
-
-const CACHE_NAME = "hibou66-v2"; // <-- change this to v3, v4... on future updates
+// sw.js — FINAL FIX (ANTI-CHEAT SAFE)
+const CACHE_NAME = "hibou66-final-v1";
 
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icon-192.png",
-  "./icon-512.png",
-  "./cheat.jpeg"
+  "./icon-512.png"
 ];
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null))))
-      .then(() => self.clients.claim())
+    caches.keys().then(keys =>
+      Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", event => {
   const req = event.request;
 
-  // Network-first for page navigations (keeps index.html fresh)
+  // 🚨 NEVER cache or intercept cheat image
+  if (req.url.includes("cheat.jpeg")) {
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  // Network-first for navigation
   if (req.mode === "navigate") {
     event.respondWith(
       fetch(req)
-        .then((resp) => {
+        .then(resp => {
           const copy = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy)).catch(()=>{});
+          caches.open(CACHE_NAME).then(c => c.put("./index.html", copy));
           return resp;
         })
         .catch(() => caches.match("./index.html"))
@@ -48,13 +47,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first for everything else
+  // Cache-first for static assets
   event.respondWith(
-    caches.match(req).then((cached) => {
+    caches.match(req).then(cached => {
       if (cached) return cached;
-      return fetch(req).then((resp) => {
+      return fetch(req).then(resp => {
         const copy = resp.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(()=>{});
+        caches.open(CACHE_NAME).then(c => c.put(req, copy));
         return resp;
       });
     })
