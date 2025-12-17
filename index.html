@@ -206,6 +206,21 @@
       100% { opacity: 1; }
     }
   </style>
+  <!-- OneSignal (notifications push) -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "639b5a31-e09f-4d34-ad0f-d111d66a14ac",
+        // On utilise sw.js (ton service worker PWA) pour éviter les conflits de scope
+        serviceWorkerPath: "sw.js",
+        serviceWorkerUpdaterPath: "sw.js",
+        serviceWorkerParam: { scope: "/" }
+      });
+    });
+  </script>
+
 </head>
 <body>
   <div id="game-container">
