@@ -1,5 +1,3 @@
-importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
-
 // sw.js — FINAL FIX (ANTI-CHEAT SAFE)
 const CACHE_NAME = "hibou66-final-v1";
 
@@ -30,7 +28,7 @@ self.addEventListener("fetch", event => {
   const req = event.request;
 
   // 🚨 NEVER cache or intercept cheat image
-  if (req.url.includes("tricherie.jpeg") || req.url.includes("cheat.jpeg")) {
+  if (req.url.includes("cheat.jpeg")) {
     event.respondWith(fetch(req));
     return;
   }
