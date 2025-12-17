@@ -1,11 +1,11 @@
 {
-  "name": "Hibou 66 – APÉRO DE NUIT 66®",
-  "short_name": "Hibou 66",
+  "name": "Hib'air drink – APÉRO DE NUIT 66®",
+  "short_name": "Hib'air drink",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "description": "Mini-jeu Hibou – APÉRO DE NUIT 66®",
+  "description": "Mini-jeu – APÉRO DE NUIT 66®",
   "icons": [
     {
       "src": "icon-192.png",
