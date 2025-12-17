@@ -1043,29 +1043,33 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
       localStorage.setItem("notifAsked","1");
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal){
-        try{ await OneSignal.Notifications.requestPermission(); }catch(e){}
+        try{
+          // Small delay helps on some Android devices right after first tap
+          await new Promise(r => setTimeout(r, 50));
+          await OneSignal.Notifications.requestPermission();
+        }catch(e){}
       });
     }catch(e){}
   }
 
-  function bindPlay(){
-    var btn = document.getElementById('btnPlay') || document.getElementById('playButton');
-    if(btn){
-      btn.addEventListener('click', requestNotifOnce, {once:true});
-      return;
-    }
-    var candidates = Array.from(document.querySelectorAll('button,div,a'))
-      .filter(el => el.textContent && el.textContent.trim().toLowerCase() === 'jouer');
-    if(candidates[0]){
-      candidates[0].addEventListener('click', requestNotifOnce, {once:true});
-    }
+  function isJouerElement(el){
+    if(!el) return false;
+    // If element or one of its children contains exactly "Jouer"
+    const txt = (el.textContent || "").trim().toLowerCase();
+    return txt === "jouer";
   }
 
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', bindPlay);
-  } else {
-    bindPlay();
-  }
+  // Delegation: catches dynamically created buttons too
+  document.addEventListener("click", function(ev){
+    let el = ev.target;
+    for(let i=0;i<6 && el; i++){
+      if(isJouerElement(el)){
+        requestNotifOnce();
+        break;
+      }
+      el = el.parentElement;
+    }
+  }, true);
 })();
 </script>
 </body>
