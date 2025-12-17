@@ -206,6 +206,18 @@
       100% { opacity: 1; }
     }
   </style>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(function(OneSignal) {
+    OneSignal.init({
+      appId: "639b5a31-e09f-4d34-ad0f-d111d66a14ac",
+      serviceWorkerPath: "sw.js",
+      serviceWorkerUpdaterPath: "sw.js",
+      serviceWorkerParam: { scope: "/" }
+    });
+  });
+</script>
 </head>
 <body>
   <div id="game-container">
@@ -1023,7 +1035,6 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
       });
     }
   </script>
-
 <script>
 (function(){
   function requestNotifOnce(){
@@ -1038,13 +1049,11 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
   }
 
   function bindPlay(){
-    // Try common ids first
     var btn = document.getElementById('btnPlay') || document.getElementById('playButton');
     if(btn){
       btn.addEventListener('click', requestNotifOnce, {once:true});
       return;
     }
-    // Fallback: any button/div containing text 'Jouer'
     var candidates = Array.from(document.querySelectorAll('button,div,a'))
       .filter(el => el.textContent && el.textContent.trim().toLowerCase() === 'jouer');
     if(candidates[0]){
@@ -1059,6 +1068,5 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
   }
 })();
 </script>
-
 </body>
 </html>
