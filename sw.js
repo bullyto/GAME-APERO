@@ -7,7 +7,8 @@ const ASSETS = [
   "./index.html",
   "./manifest.webmanifest",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./share-1200x630.png"
 ];
 
 self.addEventListener("install", event => {

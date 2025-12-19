@@ -5,7 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>APÉRO DE NUIT 66&reg;</title>
   <meta name="theme-color" content="#000000"/>
-  <link rel="manifest" href="manifest.webmanifest"/>
+    <link rel="canonical" href="https://game.aperos.net/"/>
+
+  <!-- Social sharing (Facebook/WhatsApp/iMessage/SMS previews/etc.) -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="APÉRO DE NUIT 66®"/>
+  <meta property="og:title" content="Hib'air drink – APÉRO DE NUIT 66®"/>
+  <meta property="og:description" content="🦉 Attrape des bouteilles, évite les avions… et débloque des surprises 🎁 (25 & 50 pts)"/>
+  <meta property="og:url" content="https://game.aperos.net/"/>
+  <meta property="og:image" content="https://game.aperos.net/share-1200x630.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Hib'air drink – APÉRO DE NUIT 66®"/>
+  <meta name="twitter:description" content="🦉 Attrape des bouteilles, évite les avions… et débloque des surprises 🎁 (25 & 50 pts)"/>
+  <meta name="twitter:image" content="https://game.aperos.net/share-1200x630.png"/>
+
+<link rel="manifest" href="manifest.webmanifest"/>
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
   <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png"/>
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
@@ -255,6 +272,7 @@
     <div id="menu" class="overlay">
       <h1>APÉRO DE NUIT 66&reg;</h1>
       <button id="playBtn">Jouer</button>
+      <button id="installBtn" style="display:none;">Ajouter le jeu à l’écran d’accueil</button>
       <button id="instructionsBtn">Instructions</button>
       <button id="useCodeBtn" style="display:none;">Utiliser mon code</button>
       <div id="highScores">
@@ -1023,6 +1041,67 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
     updateCloud();
   });
   </script>
+
+
+  <!-- Bouton "Ajouter à l’écran d’accueil" (PWA) -->
+  <script>
+  (function(){
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+
+    if(!installBtn) return;
+
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    function showInstallBtn(){ installBtn.style.display = 'block'; }
+    function hideInstallBtn(){ installBtn.style.display = 'none'; }
+
+    // Android/Chrome: capture the install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      showInstallBtn();
+    });
+
+    // iOS: no beforeinstallprompt — show help button when not already installed
+    if (isIOS && !isStandalone) {
+      showInstallBtn();
+    }
+
+    installBtn.addEventListener('click', async () => {
+      try{
+        // Chrome/Android install prompt
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          hideInstallBtn();
+          return;
+        }
+
+        // iOS instructions
+        if (isIOS) {
+          alert("Sur iPhone :
+1) Appuie sur le bouton Partager (carré + flèche)
+2) Choisis « Sur l’écran d’accueil »
+3) Valide ✅");
+          return;
+        }
+
+        // Other browsers (fallback)
+        alert("Installation non supportée sur ce navigateur. Ouvre le lien dans Chrome/Safari pour l’ajouter à l’écran d’accueil.");
+      }catch(e){}
+    });
+
+    // Hide button if installed later
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      hideInstallBtn();
+    });
+  })();
+  </script>
+
 
   <!-- Enregistrement du service worker pour la PWA -->
   <script>
