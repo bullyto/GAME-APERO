@@ -245,7 +245,14 @@
       display:none;
     }
 
-  </style>
+  
+/* Ajustement emoji palier 25 (+6px supplémentaires) */
+.progress-bar [data-score="25"],
+.progress-bar .milestone-25{
+  transform: translateY(12px); /* 6px de plus */
+}
+
+</style>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -1213,5 +1220,29 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
   }, true);
 })();
 </script>
+
+/* === FIX AUDIO PWA (réactivation après installation) === */
+(function(){
+  let resumed = false;
+  function resumeAudio(){
+    if(resumed) return;
+    resumed = true;
+    try{
+      if(window.AudioContext || window.webkitAudioContext){
+        const ctx = window.__audioCtx;
+        if(ctx && ctx.state === 'suspended') ctx.resume();
+      }
+      // relance éventuelle des <audio>
+      document.querySelectorAll('audio').forEach(a=>{
+        try{ a.muted=false; a.play().then(()=>a.pause()).catch(()=>{}); }catch(e){}
+      });
+    }catch(e){}
+    document.removeEventListener('click', resumeAudio, true);
+    document.removeEventListener('touchstart', resumeAudio, true);
+  }
+  document.addEventListener('click', resumeAudio, true);
+  document.addEventListener('touchstart', resumeAudio, true);
+})();
+
 </body>
 </html>
