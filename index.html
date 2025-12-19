@@ -272,7 +272,7 @@
     <div id="menu" class="overlay">
       <h1>APÉRO DE NUIT 66&reg;</h1>
       <button id="playBtn">Jouer</button>
-      <button id="installBtn" style="display:none;">Ajouter le jeu à l’écran d’accueil</button>
+      <button id="installBtn">Ajouter le jeu à l’écran d’accueil</button>
       <button id="instructionsBtn">Instructions</button>
       <button id="useCodeBtn" style="display:none;">Utiliser mon code</button>
       <div id="highScores">
@@ -1044,63 +1044,59 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
 
 
   <!-- Bouton "Ajouter à l’écran d’accueil" (PWA) -->
-  <script>
-  (function(){
-    let deferredPrompt = null;
-    const installBtn = document.getElementById('installBtn');
+<script>
+(function () {
+  const installBtn = document.getElementById('installBtn');
+  if (!installBtn) return;
 
-    if(!installBtn) return;
+  let deferredPrompt = null;
 
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
 
-    function showInstallBtn(){ installBtn.style.display = 'block'; }
-    function hideInstallBtn(){ installBtn.style.display = 'none'; }
+  // Affiche le bouton même sur iPhone (où il n’y a pas de popup d’installation automatique)
+  if (!isStandalone) {
+    installBtn.style.display = 'block';
+  } else {
+    installBtn.style.display = 'none';
+  }
 
-    // Android/Chrome: capture the install prompt
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      showInstallBtn();
-    });
+  // Android/Chrome: capture l’événement d’installation
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isStandalone) installBtn.style.display = 'block';
+  });
 
-    // iOS: no beforeinstallprompt — show help button when not already installed
-    if (isIOS && !isStandalone) {
-      showInstallBtn();
+  // Clic bouton: soit on lance le prompt (Android), soit on explique (iPhone / autres)
+  installBtn.addEventListener('click', async () => {
+    if (isStandalone) return;
+
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+      } catch (err) {}
+      deferredPrompt = null;
+      return;
     }
 
-    installBtn.addEventListener('click', async () => {
-      try{
-        // Chrome/Android install prompt
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          await deferredPrompt.userChoice;
-          deferredPrompt = null;
-          hideInstallBtn();
-          return;
-        }
+    if (isIOS) {
+      alert("Sur iPhone : appuie sur le bouton Partager (⬆️) puis 'Sur l’écran d’accueil'.");
+      return;
+    }
 
-        // iOS instructions
-        if (isIOS) {
-          alert("Sur iPhone :
-1) Appuie sur le bouton Partager (carré + flèche)
-2) Choisis « Sur l’écran d’accueil »
-3) Valide ✅");
-          return;
-        }
+    alert("Ouvre ce lien dans Chrome (Android) ou Safari (iPhone) pour l’ajouter à l’écran d’accueil.");
+  });
 
-        // Other browsers (fallback)
-        alert("Installation non supportée sur ce navigateur. Ouvre le lien dans Chrome/Safari pour l’ajouter à l’écran d’accueil.");
-      }catch(e){}
-    });
-
-    // Hide button if installed later
-    window.addEventListener('appinstalled', () => {
-      deferredPrompt = null;
-      hideInstallBtn();
-    });
-  })();
-  </script>
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+})();
+</script>
 
 
   <!-- Enregistrement du service worker pour la PWA -->
