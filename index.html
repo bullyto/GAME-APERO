@@ -222,6 +222,29 @@
       80% { opacity: 0.4; }
       100% { opacity: 1; }
     }
+  
+    /* === Bouton Info (débloqué à partir de 10 points) === */
+    #infoBtn{
+      position:absolute;
+      top:8vh;
+      left:2vw;
+      z-index:11;
+      width:44px;
+      height:44px;
+      border-radius:999px;
+      border:none;
+      background:rgba(0,0,0,0.5);
+      color:#fff;
+      font-size:22px;
+      cursor:pointer;
+      pointer-events:auto;
+      display:none; /* visible uniquement à partir du score 10 */
+      backdrop-filter: blur(6px);
+    }
+    #infoOverlay{
+      display:none;
+    }
+
   </style>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
@@ -256,6 +279,23 @@
 
     <!-- Bouton son ON/OFF -->
     <button id="soundToggle">🔊</button>
+
+
+    <!-- Bouton Info (visible uniquement à partir du score 10) -->
+    <button id="infoBtn" aria-label="Informations">ℹ️</button>
+
+    <!-- Overlay Info (texte uniquement, clic pour fermer) -->
+    <div id="infoOverlay" class="overlay" style="display:none;">
+      <div style="text-align:left;">
+        <div>Informations – Jeu promotionnel</div>
+        <div>Ce jeu est une animation promotionnelle gratuite, sans obligation d’achat.</div>
+        <div>Les gains obtenus correspondent à des avantages promotionnels utilisables sur le site APÉRO DE NUIT 66®.</div>
+        <div>Aucun paiement n’est requis pour jouer.</div>
+        <div>Les règles complètes du jeu, les mentions légales et la politique de confidentialité sont consultables sur le site officiel.</div>
+        <div>© APÉRO DE NUIT 66®</div>
+      </div>
+    </div>
+
 
     <!-- Barre de progression brandée -->
     <div id="brandProgress">
@@ -666,6 +706,29 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
       livesEls.forEach((h,i)=> h.style.visibility = i<lives?'visible':'hidden');
     }
 
+
+    // === Info (débloqué à partir de 10 points) ===
+    const infoBtn = document.getElementById('infoBtn');
+    const infoOverlay = document.getElementById('infoOverlay');
+
+    function syncInfoButton(currentScore){
+      if (!infoBtn) return;
+      infoBtn.style.display = (currentScore >= 10) ? 'block' : 'none';
+    }
+
+    if (infoBtn && infoOverlay){
+      infoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        infoOverlay.style.display = 'block';
+      });
+      // Clic n'importe où sur l'overlay = fermer
+      infoOverlay.addEventListener('click', () => {
+        infoOverlay.style.display = 'none';
+      });
+    }
+
+
+
     // High scores & codes
 
     function hasUnlockedCode25(){
@@ -882,6 +945,8 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
           score++;
           updateHUD();
           updateBrandProgress(score);
+      syncInfoButton(score);
+          syncInfoButton(score);
 
           if (score === 25) { setUnlockedCode25(); }
           playSound(pointSound);
@@ -1037,6 +1102,7 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
     // Au chargement
     displayHighScores();
     syncUseCodeButton(hasUnlockedCode25() ? 25 : 0);
+    syncInfoButton(0);
     updateBackground();
     updateCloud();
   });
