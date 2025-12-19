@@ -252,6 +252,43 @@
   transform: translateY(12px); /* 6px de plus */
 }
 
+
+/* === Info overlay (au-dessus de tout, carte non transparente) === */
+#infoOverlay{
+  position:fixed;
+  inset:0;
+  z-index: 20000; /* au-dessus du menu + popups existants */
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background: rgba(0,0,0,0.55);
+}
+#infoOverlay .info-card{
+  width:min(560px, 92vw);
+  max-height: 78vh;
+  overflow:auto;
+  border-radius: 22px;
+  padding: 18px 16px;
+  background: #ffffff; /* NON transparent */
+  color:#111;
+  box-shadow: 0 18px 55px rgba(0,0,0,0.55);
+}
+#infoOverlay .info-card div{
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+#infoOverlay .info-card div:first-child{
+  font-weight: 800;
+  font-size: 16px;
+  margin-top: 0;
+}
+
+
+/* bouton ℹ️ au-dessus du menu */
+#infoBtn{ z-index: 20001; }
+
 </style>
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
@@ -291,9 +328,9 @@
     <!-- Bouton Info (visible uniquement à partir du score 10) -->
     <button id="infoBtn" aria-label="Informations">ℹ️</button>
 
-    <!-- Overlay Info (texte uniquement, clic pour fermer) -->
-    <div id="infoOverlay" class="overlay" style="display:none;">
-      <div style="text-align:left;">
+    <!-- Overlay Info (texte uniquement, maintenir appuyé sur ℹ️ pour lire) -->
+    <div id="infoOverlay">
+      <div class="info-card" role="dialog" aria-modal="true">
         <div>Informations – Jeu promotionnel</div>
         <div>Ce jeu est une animation promotionnelle gratuite, sans obligation d’achat.</div>
         <div>Les gains obtenus correspondent à des avantages promotionnels utilisables sur le site APÉRO DE NUIT 66®.</div>
@@ -301,6 +338,7 @@
         <div>Les règles complètes du jeu, les mentions légales et la politique de confidentialité sont consultables sur le site officiel.</div>
         <div>© APÉRO DE NUIT 66®</div>
       </div>
+    </div>
     </div>
 
 
@@ -723,16 +761,41 @@ const CHEAT_IMAGE_FALLBACK = "https://image.noelshack.com/fichiers/2025/51/2/176
       infoBtn.style.display = (currentScore >= 10) ? 'block' : 'none';
     }
 
-    if (infoBtn && infoOverlay){
-      infoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        infoOverlay.style.display = 'block';
-      });
-      // Clic n'importe où sur l'overlay = fermer
-      infoOverlay.addEventListener('click', () => {
-        infoOverlay.style.display = 'none';
-      });
+    function showInfo(){
+      if(!infoOverlay) return;
+      infoOverlay.style.display = 'flex';
+      // empêche le scroll derrière
+      document.body.style.overflow = 'hidden';
     }
+    function hideInfo(){
+      if(!infoOverlay) return;
+      infoOverlay.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    if (infoBtn && infoOverlay){
+      // Maintenir appuyé pour lire (press & hold)
+      const down = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showInfo();
+      };
+      const up = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        hideInfo();
+      };
+
+      infoBtn.addEventListener('pointerdown', down, {passive:false});
+      infoBtn.addEventListener('pointerup', up, {passive:false});
+      infoBtn.addEventListener('pointercancel', up, {passive:false});
+      infoBtn.addEventListener('pointerleave', up, {passive:false});
+
+      // Si l'utilisateur relâche en dehors du bouton (ex: glisse le doigt)
+      window.addEventListener('pointerup', hideInfo, {passive:true});
+      window.addEventListener('blur', hideInfo);
+    }
+
 
 
 
