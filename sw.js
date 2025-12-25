@@ -1,6 +1,6 @@
 importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 // sw.js — FINAL FIX (ANTI-CHEAT SAFE)
-const CACHE_NAME = 'hibou66-final-v2';
+const CACHE_NAME = 'game-v2';
 
 const ASSETS = [
   "./",
